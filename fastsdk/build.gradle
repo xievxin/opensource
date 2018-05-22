@@ -17,9 +17,9 @@ allprojects {
     repositories {
         google()
         jcenter()
-        maven {
-            url "https://dl.bintray.com/xiexin/maven"
-        }
+//        maven {
+//            url "https://dl.bintray.com/xiexin/maven"
+//        }
     }
 }
 
