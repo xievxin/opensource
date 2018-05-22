@@ -1,0 +1,16 @@
+apply plugin: 'maven'
+
+repositories {
+    mavenCentral()
+}
+group='com.xx.fastsdk'
+archivesBaseName = 'test'
+version='0.2.0'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri('../repo'))
+        }
+    }
+}
