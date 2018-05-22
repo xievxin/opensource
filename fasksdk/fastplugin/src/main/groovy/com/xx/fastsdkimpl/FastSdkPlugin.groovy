@@ -10,7 +10,6 @@ class FastSdkPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         println("*******************fastsdk*******************")
-
 //        if (!project.plugins.hasPlugin('com.android.application')) {
 //            System.err.println("application required!")
 //            return

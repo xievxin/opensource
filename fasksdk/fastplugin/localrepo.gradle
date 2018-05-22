@@ -1,7 +1,5 @@
 apply plugin: 'maven'
 
-println("localrepo...")
-
 repositories {
     mavenCentral()
 }

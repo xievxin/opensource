@@ -1,1 +1,1 @@
-include ':app', ':fastsdkimpl'
+include ':app', ':fastplugin'
