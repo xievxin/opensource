@@ -14,7 +14,13 @@
                 <action android:name='android.intent.action.MAIN'></action>
                 <category android:name='android.intent.category.LAUNCHER'></category>
             </intent-filter>
-        </activity><!--个推SDK配置开始--><!--配置的第三方参数属性-->
+            <intent-filter>
+                <action android:name='android.intent.action.VIEW'></action>
+            </intent-filter>
+        </activity><!--
+个推SDK配置开始--><!--
+配置的第三方参数属性-->
+        <meta-data android:name='PUSH_FLAG' />
         <meta-data
             android:name='PUSH_APPID'
             android:value='fEcv3YmA9C6MBTQlyjnDg8' />
@@ -87,8 +93,4 @@
     <permission
         android:name='getui.permission.GetuiService.${applicationId}'
         android:protectionLevel='normal' />
-</manifest><!--<?xml version="1.0" encoding="utf-8"?>--><!--<manifest xmlns:android="http://schemas.android.com/apk/res/android"--><!--package="com.xx.fasksdk">-->
-
-    <!--<application--><!--android:allowBackup="true"--><!--android:icon="@mipmap/ic_launcher"--><!--android:label="@string/app_name"--><!--android:roundIcon="@mipmap/ic_launcher_round"--><!--android:supportsRtl="true"--><!--android:theme="@style/AppTheme">--><!--<activity android:name=".MainActivity">--><!--<intent-filter>--><!--<action android:name="android.intent.action.MAIN" />-->
-
-    <!--<category android:name="android.intent.category.LAUNCHER" />--><!--</intent-filter>--><!--</activity>--><!--</application>--><!--</manifest>-->
+</manifest>

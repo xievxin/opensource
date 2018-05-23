@@ -1,6 +1,6 @@
 package com.xx.fastsdkimpl
 
-public class GtUserBean  {
+public class GtUserBean {
     String APP_ID
     String APP_KEY
     String APP_SECRET

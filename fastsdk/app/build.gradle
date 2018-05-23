@@ -7,8 +7,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 27
         versionCode 1
-        versionName "1.1"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        versionName "1.2"
     }
     buildTypes {
         release {
@@ -25,14 +24,22 @@ dependencies {
 }
 
 
-//buildscript {
+buildscript {
+    repositories {
+        maven {
+            url uri('../repo')
+        }
+    }
+    dependencies {
+        classpath 'com.xx.fastsdk:test:0.3.0'
+    }
+}
+//buildscript{
 //    repositories {
-//        maven {
-//            url uri('../repo')
-//        }
+//        jcenter()
 //    }
 //    dependencies {
-//        classpath 'com.xx.fastsdk:test:0.2.0'
+//        classpath 'com.xx.fastsdk:beta:+'
 //    }
 //}
 apply plugin: 'com.xx.fastsdk'

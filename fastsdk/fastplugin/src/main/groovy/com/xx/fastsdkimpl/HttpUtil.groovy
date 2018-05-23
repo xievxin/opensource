@@ -27,7 +27,7 @@ class HttpUtil {
                 b = null
                 System.out.println("下载成功")
                 flag = true
-            }else {
+            } else {
                 System.err.println("gtPlugins download err!!errCode is : " + conn.getResponseCode())
             }
         } catch (Exception e) {
