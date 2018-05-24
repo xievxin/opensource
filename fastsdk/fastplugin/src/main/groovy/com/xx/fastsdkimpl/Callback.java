@@ -7,5 +7,5 @@ import groovy.util.Node;
  * Created by xievxin on 2018/5/21
  */
 public interface Callback {
-    void onCall(Node node);
+    void onCall(Node node, int curDeepCount);
 }
