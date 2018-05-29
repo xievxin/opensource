@@ -1,4 +1,4 @@
-package com.xx.fastsdkimpl;
+package com.xx.interfaces;
 
 
 import groovy.util.Node;

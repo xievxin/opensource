@@ -1,4 +1,4 @@
-package com.xx.fastsdkimpl;
+package com.xx.model;
 
 import org.gradle.api.Project;
 

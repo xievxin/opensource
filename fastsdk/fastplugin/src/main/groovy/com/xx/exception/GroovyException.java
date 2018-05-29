@@ -1,4 +1,4 @@
-package com.xx.fastsdkimpl;
+package com.xx.exception;
 
 /**
  * Created by xievxin on 2018/5/23

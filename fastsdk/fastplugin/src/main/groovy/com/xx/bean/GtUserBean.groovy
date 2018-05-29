@@ -1,4 +1,4 @@
-package com.xx.fastsdkimpl
+package com.xx.bean
 
 public class GtUserBean {
     String APP_ID

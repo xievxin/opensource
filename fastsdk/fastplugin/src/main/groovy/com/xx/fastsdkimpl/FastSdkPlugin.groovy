@@ -1,5 +1,10 @@
 package com.xx.fastsdkimpl
 
+import com.xx.bean.GtUserBean
+import com.xx.exception.GroovyException
+import com.xx.interfaces.Callback
+import com.xx.interfaces.DownloadListener
+import com.xx.model.HttpUtil
 import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -11,6 +16,8 @@ import java.util.zip.ZipFile
 class FastSdkPlugin implements Plugin<Project> {
 
     Project project
+    def process = [""]
+    def space = [""]
     def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
 
     @Override
@@ -21,6 +28,7 @@ class FastSdkPlugin implements Plugin<Project> {
             System.err.println("application required!")
             return
         }
+        initArr()
 
         project.extensions.create('gtUser', GtUserBean)
         RuntimeDataManager.mProject = project
@@ -34,7 +42,33 @@ class FastSdkPlugin implements Plugin<Project> {
                 System.err.println("err : " + e.toString())
             }
         }
+
+//        test()
         println("*******************fastsdk OVER*******************")
+    }
+
+    void test() {
+        println("*************apptest start***********")
+        int count = 1
+        while (count++ < 40) {
+            print("\r" + count + "%")
+            sleep(100)
+        }
+        println("*************apptest end3*************")
+    }
+
+    void initArr() {
+        int index = 20
+        StringBuilder sb = new StringBuilder();
+        while (index-- > 0) {
+            process << sb.append("=").toString()
+        }
+
+        index = 20
+        sb.delete(0, sb.size())
+        while (index-- > 0) {
+            space << sb.append("-").toString()
+        }
     }
 
     /**
@@ -68,12 +102,43 @@ class FastSdkPlugin implements Plugin<Project> {
      * @return true download success or already exist, false otherwise
      */
     private final boolean downloadLibs() {
-        def url = "https://nj01ct01.baidupcs.com/file/06d4fbd2064dba0bd58dd20f816ca9ec?bkt=p3-140006d4fbd2064dba0bd58dd20f816ca9ecd53f038d0000000850fe&fid=2735751894-250528-284663320752002&time=1527057674&sign=FDTAXGERLQBHSK-DCb740ccc5511e5e8fedcff06b081203-1UByBCC6VAXFBWBo%2FNrP4c6S3i8%3D&to=63&size=545022&sta_dx=545022&sta_cs=1&sta_ft=zip&sta_ct=1&sta_mt=1&fm2=MH%2CYangquan%2CAnywhere%2C%2Czhejiang%2Cct&vuk=2735751894&iv=0&newver=1&newfm=1&secfm=1&flow_ver=3&pkey=140006d4fbd2064dba0bd58dd20f816ca9ecd53f038d0000000850fe&sl=76480590&expires=8h&rt=sh&r=668692554&mlogid=3307573999573532340&vbdid=2202615538&fin=gtSDK.zip&fn=gtSDK.zip&rtype=1&dp-logid=3307573999573532340&dp-callid=0.1.1&hps=1&tsl=80&csl=80&csign=LraYTFNsTcoKxtvKhl9vaKsgqBk%3D&so=0&ut=6&uter=4&serv=0&uc=2361768026&ic=1484612705&ti=26fa64dbec28822423b7a5bc41b22f8db3b1e649745ca328305a5e1275657320&by=themis"
+        def url = "https://nj01ct01.baidupcs.com/file/06d4fbd2064dba0bd58dd20f816ca9ec?bkt=p3-140006d4fbd2064dba0bd58dd20f816ca9ecd53f038d0000000850fe&fid=2735751894-250528-284663320752002&time=1527563724&sign=FDTAXGERLQBHSK-DCb740ccc5511e5e8fedcff06b081203-PP5xwqfnFsvGciJAfJx6rPa%2FU%2BY%3D&to=63&size=545022&sta_dx=545022&sta_cs=2&sta_ft=zip&sta_ct=2&sta_mt=2&fm2=MH%2CYangquan%2CAnywhere%2C%2Czhejiang%2Cct&vuk=2735751894&iv=0&newver=1&newfm=1&secfm=1&flow_ver=3&pkey=140006d4fbd2064dba0bd58dd20f816ca9ecd53f038d0000000850fe&sl=76480590&expires=8h&rt=sh&r=262383623&mlogid=3443415952727509538&vbdid=2202615538&fin=gtSDK.zip&fn=gtSDK.zip&rtype=1&dp-logid=3443415952727509538&dp-callid=0.1.1&hps=1&tsl=80&csl=80&csign=LraYTFNsTcoKxtvKhl9vaKsgqBk%3D&so=0&ut=6&uter=4&serv=0&uc=2361768026&ic=1484612705&ti=9019d4fba4d9bad6355a596bb26caac2d2d738111080d957&by=themis"
         File libFile = createLibFile()
         if (!libFile.exists()) {
-            println("start downloadLibs")
-            boolean flag = new HttpUtil().download(project, url, libFile)
-            println("End downloadLibs, libFile is " + (libFile?.exists() ? "loaded" : "no exist"))
+            boolean flag = new HttpUtil().download(project, url, libFile, new DownloadListener() {
+
+                Writer writer = System.out.newPrintWriter()
+                int retryCount = 3
+
+                @Override
+                void onStart() {
+                    println("start downloadLibs")
+                }
+
+                @Override
+                void onBuffer(int percent) {
+//                    println("onBuffer : "+percent)
+                    int index = (int) (percent / 5)
+                    writer.write("\r<" +
+                            (index ? "\033[1;32m" + process[index] + "\033[0m" : "")
+                            + space[20 - index] + ">\t" + percent + "%")
+                    writer.flush()
+                }
+
+                @Override
+                void onFinished() {
+                    println("\n下载成功 End downloadLibs, libFile is " + (libFile?.exists() ? "loaded" : "no exist"))
+                }
+
+                @Override
+                void onError(String errMsg) {
+                    System.err.println(errMsg)
+                    if (retryCount > 0 && (libFile.exists() ? libFile.delete() : true)) {
+                        println("还剩余${retryCount--}次download重试")
+                        new HttpUtil().download(project, url, libFile, this)
+                    }
+                }
+            })
             return flag
         }
         true
@@ -168,7 +233,7 @@ class FastSdkPlugin implements Plugin<Project> {
                     def attrMap = [:]
                     int size = node.attributes().size()
                     node?.attributes()?.each { key, value ->
-                        attrMap.put((size>1 ? "\n"+ tabs[tabCount] : "") +
+                        attrMap.put((size > 1 ? "\n" + tabs[tabCount] : "") +
                                 key.toString().replace("{http://schemas.android.com/apk/res/android}", "android:"), value)
                     }
                     attrMap
@@ -249,17 +314,17 @@ class FastSdkPlugin implements Plugin<Project> {
                         mkp.yield("\n" + tabs[deepCount])
                         def nd = nodeIt.next()
                         // 没有子节点就以“/>”结尾
-                        if(!nd.children()) {
+                        if (!nd.children()) {
                             "${nd.name()}"(getAttrs(nd, deepCount + 1))
                             continue
                         }
                         "${nd.name()}"(getAttrs(nd, deepCount + 1))
-                        {
-                            callback.onCall(nd, deepCount + 1)
-                            if ("application".equalsIgnoreCase(nd.name())) {
-                                appXml(2)
-                            }
-                        }
+                                {
+                                    callback.onCall(nd, deepCount + 1)
+                                    if ("application".equalsIgnoreCase(nd.name())) {
+                                        appXml(2)
+                                    }
+                                }
                     }
                     mkp.yield("\n" + tabs[deepCount - 1])
                 }
