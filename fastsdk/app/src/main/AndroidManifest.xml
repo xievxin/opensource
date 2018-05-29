@@ -7,26 +7,21 @@
 		android:roundIcon='@mipmap/ic_launcher_round' 
 		android:supportsRtl='true' 
 		android:theme='@style/AppTheme'>
-		<activity 
-			android:name='.MainActivity'>
+		<activity android:name='.MainActivity'>
 			<intent-filter>
-				<action 
-					android:name='android.intent.action.MAIN'></action>
-			
-				<category 
-					android:name='android.intent.category.LAUNCHER'></category>
+				<action android:name='android.intent.action.MAIN'/>
+				<category android:name='android.intent.category.LAUNCHER'/>
 			</intent-filter>
-		
 			<intent-filter>
-				<action 
-					android:name='android.intent.action.VIEW'></action>
+				<action android:name='android.intent.action.VIEW'/>
 			</intent-filter>
 		</activity>
+		<activity android:name='.AActivity'/>
 	
 
 		<!--个推SDK配置开始-->
 		<!--配置的第三方参数属性-->
-		<meta-data android:name='PUSH_FLAG' android:value=''/>
+		<meta-data android:name='PUSH_FLAG' android:value=''/><!--插件标识，请勿删除-->
 		<meta-data android:name='PUSH_APPID' android:value='fEcv3YmA9C6MBTQlyjnDg8'/>
 		<meta-data android:name='PUSH_APPKEY' android:value='UrHfUjA7Tl8sIg6qpnWtGA'/>
 		<meta-data android:name='PUSH_APPSECRET' android:value='JyqcPWqROz6An2lb3jZ0k4}'/>
@@ -42,15 +37,15 @@
 		</service>
 		<receiver android:name='com.igexin.sdk.PushReceiver'>
 			<intent-filter>
-			<action android:name='android.intent.action.BOOT_COMPLETED'/>
-			<action android:name='android.net.conn.CONNECTIVITY_CHANGE'/>
-			<action android:name='android.intent.action.USER_PRESENT'/>
-			<action android:name='com.igexin.sdk.action.refreshls'/>
-			<!--以下三项为可选的action声明，可大大提高service存活率和消息到达速度-->
-			<action android:name='android.intent.action.MEDIA_MOUNTED'/>
-			<action android:name='android.intent.action.ACTION_POWER_CONNECTED'/>
-			<action android:name='android.intent.action.ACTION_POWER_DISCONNECTED'/>
-		</intent-filter>
+				<action android:name='android.intent.action.BOOT_COMPLETED'/>
+				<action android:name='android.net.conn.CONNECTIVITY_CHANGE'/>
+				<action android:name='android.intent.action.USER_PRESENT'/>
+				<action android:name='com.igexin.sdk.action.refreshls'/>
+				<!--以下三项为可选的action声明，可大大提高service存活率和消息到达速度-->
+				<action android:name='android.intent.action.MEDIA_MOUNTED'/>
+				<action android:name='android.intent.action.ACTION_POWER_CONNECTED'/>
+				<action android:name='android.intent.action.ACTION_POWER_DISCONNECTED'/>
+			</intent-filter>
 		</receiver>
 		<activity 
 			android:name='com.igexin.sdk.PushActivity' 
