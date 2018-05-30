@@ -4,7 +4,9 @@ import com.xx.bean.GtUserBean
 import com.xx.exception.GroovyException
 import com.xx.interfaces.Callback
 import com.xx.interfaces.DownloadListener
+import com.xx.model.FastXmlNamespaceReader
 import com.xx.model.HttpUtil
+import com.xx.model.RuntimeDataManager
 import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -33,15 +35,15 @@ class FastSdkPlugin implements Plugin<Project> {
         project.extensions.create('gtUser', GtUserBean)
         RuntimeDataManager.mProject = project
 
-        if (downloadLibs()) {
-            readLocalProperties()
-            configLibs()
-            try {
-                configManifest()
-            } catch (GroovyException e) {
-                System.err.println("err : " + e.toString())
-            }
+//        if (downloadLibs()) {
+        readLocalProperties()
+//            configLibs()
+        try {
+            configManifest()
+        } catch (GroovyException e) {
+            System.err.println("err : " + e.toString())
         }
+//        }
 
 //        test()
         println("*******************fastsdk OVER*******************")
@@ -213,28 +215,37 @@ class FastSdkPlugin implements Plugin<Project> {
 
         // 解析
         def xmlParser = new XmlParser().parse(appFile)
+//        def xmlParser = new XmlSlurper().parse(appFile)
         println("parse 'manifest.xml' success...")
 
-        xmlParser.application?."meta-data"?.each { Node node ->
-            node.attributes().each {
-                String[] arr = it.toString().split("=")
-                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
-                    throw new GroovyException("manifest was configured")
-                }
-            }
-        }
+//        xmlParser.application?."meta-data"?.each { Node node ->
+//            node.attributes().each {
+//                String[] arr = it.toString().split("=")
+//                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
+//                    throw new GroovyException("manifest was configured")
+//                }
+//            }
+//        }
+
+        def xmlnsMap = new FastXmlNamespaceReader().read(appFile)
 
         def result = {
             mkp.xmlDeclaration()
-            // todo 最好从xmlParser中识别namaspace
-            mkp.declareNamespace(android: "http://schemas.android.com/apk/res/android")
+            xmlnsMap?.each { key, value ->
+                mkp.declareNamespace("${key}": value)
+            }
             manifest(xmlParser.attributes()) {
                 def getAttrs = { Node node, int tabCount ->
                     def attrMap = [:]
                     int size = node.attributes().size()
                     node?.attributes()?.each { key, value ->
-                        attrMap.put((size > 1 ? "\n" + tabs[tabCount] : "") +
-                                key.toString().replace("{http://schemas.android.com/apk/res/android}", "android:"), value)
+                        String keyStr = key.toString()
+                        xmlnsMap?.each { xkey, xvalue ->
+                            if (keyStr.contains(xvalue.toString())) {
+                                keyStr = keyStr.replaceFirst("\\{${xvalue.toString()}\\}", "${xkey}:")
+                            }
+                        }
+                        attrMap.put((size > 1 ? "\n" + tabs[tabCount] : "") + keyStr, value)
                     }
                     attrMap
                 }
@@ -386,7 +397,8 @@ class FastSdkPlugin implements Plugin<Project> {
         }
 
         def doc = new StreamingMarkupBuilder().bind(result)
-        def writer = new FileWriter(appFile)
+//        def writer = new FileWriter(appFile)
+        def writer = new FileWriter(new File(project.name + "/src/main/test.xml"))
         try {
             writer << doc
         } finally {
