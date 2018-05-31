@@ -1,9 +1,11 @@
 package com.xx.interfaces
 
-import com.xx.exception.GroovyException
 import com.xx.exception.UnCaughtException
 import com.xx.model.FastXmlNamespaceReader
 import org.gradle.api.Project
+
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Files
 
 /**
  * Created by xievxin on 2018/5/30
@@ -20,45 +22,57 @@ abstract class IManifest {
      */
     static final String NODE_YIELD = "gtp_yield"
 
-    def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
+    static final String BackupManifestName = "OldAndroidManifest"
+
+    static def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
 
     boolean isInited = false
     Project project
-    File appFile
-    Node xmlParser
+    File manifestFile
+    File oldManifestFile
+    Node xmlRoot
 
     /**
      * 必须调用
      * @param project
-     * @param appFile
-     * @param xmlParser
+     * @param manifestFile
+     * @param xmlRoot
      */
-    void init(Project project, File appFile, Node xmlParser) {
+    void init(Project project) {
         this.project = project
-        this.appFile = appFile
-        this.xmlParser = xmlParser
+        // 顺序别换
+        realInit()
+
+        // 先备份一下
+        backUpManifest()
         isInited = true
     }
 
-    /**
-     *
-     * @return a Closure
-     */
-    protected abstract void appendApplicationNodes(def mkp, Node root)
+    private final void realInit() {
+        manifestFile = new File(project.name + "/src/main/AndroidManifest.xml")
+        oldManifestFile = new File(project.name + "/src/main/${BackupManifestName}.xml")
+        xmlRoot = new XmlParser().parse(manifestFile)
+    }
 
     /**
-     *
-     * @return a Closure
+     *  application节点下拼接
+     *  activity、service、receiver、provider等
+     * @param root < manifest>
      */
-    protected abstract void appendPermissionNodes(def mkp, Node root)
+    protected abstract void appendApplicationNodes(Node root)
+
+    /**
+     * 权限节点拼接
+     * @param root < manifest>
+     */
+    protected abstract void appendPermissionNodes(Node root)
 
 
     final def result = {
         if (!isInited) {
             throw new UnCaughtException(" : u must init() it before use")
         }
-        println("===========ree=r============")
-        def xmlnsMap = new FastXmlNamespaceReader().read(appFile)
+        def xmlnsMap = new FastXmlNamespaceReader().read(oldManifestFile)
         Node applicationRootNode = new Node(null, "appRoot")
         Node permissionRootNode = new Node(null, "perRoot")
 
@@ -67,7 +81,7 @@ abstract class IManifest {
             mkp.declareNamespace("${key}": value)
         }
         //  todo manifest中有“android:”--BUG
-        manifest(xmlParser.attributes()) {
+        manifest(xmlRoot.attributes()) {
             def getAttrs = { Node node, int tabCount ->
                 def attrMap = [:]
                 int size = node.attributes().size()
@@ -103,7 +117,7 @@ abstract class IManifest {
                     "${nd.name()}"(getAttrs(nd, deepCount + 1)) {
                         callback.onCall(nd, deepCount + 1)
                         if ("application".equalsIgnoreCase(nd.name())) {
-                            appendApplicationNodes(mkp, applicationRootNode)
+                            appendApplicationNodes(applicationRootNode)
                             callback.onCall(applicationRootNode, deepCount + 1)
                         }
                     }
@@ -120,9 +134,21 @@ abstract class IManifest {
                     })
                 }
             }
-            getChildStr(xmlParser)
-            appendPermissionNodes(mkp, permissionRootNode)
+            getChildStr(xmlRoot)
+            appendPermissionNodes(permissionRootNode)
             getChildStr(permissionRootNode)
+        }
+    }
+
+    private void backUpManifest() {
+        println("backUpManifest...")
+        if (oldManifestFile.exists()) {
+            return
+        }
+        try {
+            Files.copy(manifestFile.toPath(), oldManifestFile.toPath())
+        } catch (FileAlreadyExistsException e) {
+            System.err.println("backUpManifest() err : " + e.toString())
         }
     }
 

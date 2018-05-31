@@ -2,14 +2,18 @@ package com.xx.impl.getyan
 
 import com.xx.interfaces.IManifest
 
+/**
+ * 个验SDK集成模块
+ * Created by xievxin on 2018/5/31
+ */
 class GetyanManifest extends IManifest {
     @Override
-    protected void appendApplicationNodes(Object o, Node node) {
+    protected void appendApplicationNodes(Node root) {
 
     }
 
     @Override
-    protected void appendPermissionNodes(Object o, Node node) {
+    protected void appendPermissionNodes(Node root) {
 
     }
 }

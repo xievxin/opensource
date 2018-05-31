@@ -35,15 +35,15 @@ class FastSdkPlugin implements Plugin<Project> {
         project.extensions.create('gtUser', GtUserBean)
         RuntimeDataManager.mProject = project
 
-//        if (downloadLibs()) {
+        if (downloadLibs()) {
             readLocalProperties()
-//            configLibs()
+            configLibs()
             try {
                 configManifest()
             } catch (GroovyException e) {
                 System.out.println("err : " + e.toString())
             }
-//        }
+        }
 
         println("*******************fastsdk OVER*******************")
     }
@@ -93,13 +93,13 @@ class FastSdkPlugin implements Plugin<Project> {
      * @return true download success or already exist, false otherwise
      */
     private final boolean downloadLibs() {
-        def url = "http://dl.download.csdn.net/down11/20180530/cbfd14cd8b11607923e06035e74c677e.zip?response-content-disposition=attachment%3Bfilename%3D%22gtSDK.zip%22&OSSAccessKeyId=9q6nvzoJGowBj4q1&Expires=1527644906&Signature=OO4KppijNkhV31%2Fg23Iz3y5poLg%3D&user=u011511577&sourceid=10446483&sourcescore=1&isvip=0/WHJMrwNw1k%252FFdegHt2HMgBWzhgXifPz76jcUkcmdsrQVXAQwSZRELt4N9CIxqQWE4LPp2%252B%252BKtbwo2t1p%252FkugVdiXQrd60HRwL6Gjltw3Kj%252FAr8hkppZoTSDzKpMz452nQnaRn2PbV%252BA0fhwDCeHJsqFqRPoL7FhKirjl%252Bd2XxfVgWSI5uOU7YnRqP9E0DXwxYNmwgTPXDoBUOnY0e2JTXIlG9s13y6RoatBgdotK%252BUF10JbW2V3IPOZq5LEgmblPG1487582755342"
+        def url = "http://dl.download.csdn.net/down11/20180530/cbfd14cd8b11607923e06035e74c677e.zip?response-content-disposition=attachment%3Bfilename%3D%22gtSDK.zip%22&OSSAccessKeyId=9q6nvzoJGowBj4q1&Expires=1527752714&Signature=dXNK9WWcUAWkCxCENjKcm6vSHrE%3D&user=u011511577&sourceid=10446483&sourcescore=1&isvip=0/WHJMrwNw1k%252FFdegHt2HMgBa33CwlSz57TPGjalPnOg37OLoWVZgQr4DG4FtLhNSlxsy530jgkzlCLb079zK5I6%252FAiKMrVYa%252BLvBzQ6y%252FqRr7M90FhL7%252BAY90zlieX3yDdb2GXgZ5AQVLgNbDRG79R%252B7f1T5xekz1fJB82l5Rly3zfoFAHrTKtbgkPdNcFYAABEU5AHex%252F3lp0yh1kDoYFG8N2R08wUhd1N%252BtKtKrMo8HzqTvTNUQt4j4kGeHoWDZp1487582755342"
         File libFile = createLibFile()
         if (!libFile.exists()) {
             boolean flag = new HttpUtil().download(project, url, libFile, new DownloadListener() {
 
                 Writer writer = System.out.newPrintWriter()
-                int retryCount = 3
+                int retryCount = 2
 
                 @Override
                 void onStart() {
@@ -193,61 +193,44 @@ class FastSdkPlugin implements Plugin<Project> {
 
     private final void configManifest() {
         println("configManifest...")
-        def appFile = new File(project.name + "/src/main/AndroidManifest.xml")
-        if (!appFile.exists()) {
+        def manifestFile = new File(project.name + "/src/main/AndroidManifest.xml")
+        if (!manifestFile.exists()) {
             System.err.println("can't find AndroidManifest.xml....")
             return
         }
 
-        // 先备份一下
-        backUpManifest()
-
         // 解析
-        def xmlParser = new XmlParser().parse(appFile)
-//        def xmlParser = new XmlSlurper().parse(appFile) // todo 直接使用android：?
+        def xmlRoot = new XmlParser().parse(manifestFile)
+//        def xmlRoot = new XmlSlurper().parse(manifestFile) // todo 直接使用android：?
         println("parse 'manifest.xml' success...")
 
-//        xmlParser.application?."meta-data"?.each { Node node ->
-//            node.attributes().each {
-//                String[] arr = it.toString().split("=")
-//                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
-//                    throw new GroovyException("manifest was configured")
-//                }
-//            }
-//        }
+        xmlRoot.application?."meta-data"?.each { Node node ->
+            node.attributes().each {
+                String[] arr = it.toString().split("=")
+                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
+                    throw new GroovyException("manifest was configured")
+                }
+            }
+        }
 
-        int type = 1    // 模拟从服务器去到的已开通功能
+        int type = 1    // 模拟从服务器取到的已开通功能
         IManifest manifest
-        if(type==1) {
+        if (type == 1) {
             manifest = new GetuiManifest()
-        }else if(type==2) {
+        } else if (type == 2) {
             manifest = new GetyanManifest()
         }
 
-        if(manifest) {
-            manifest.init(project, appFile, xmlParser)
+        if (manifest) {
+            manifest.init(project)
             def doc = new StreamingMarkupBuilder().bind(manifest.result)
-//            def writer = new FileWriter(appFile)
-            def writer = new FileWriter(new File(project.name + "/src/main/test.xml"))
+            def writer = new FileWriter(manifestFile)
+//            def writer = new FileWriter(new File(project.name + "/src/main/test.xml"))
             try {
                 writer << doc
             } finally {
                 writer.close()
             }
-        }
-    }
-
-    private void backUpManifest() {
-        println("backUpManifest...")
-        def appFile = new File(project.name + "/src/main/AndroidManifest.xml")
-        def backUpFile = new File(project.name + "/src/main/OldAndroidManifest.xml")
-        if (backUpFile.exists()) {
-            return
-        }
-        try {
-            Files.copy(appFile.toPath(), backUpFile.toPath())
-        } catch (FileAlreadyExistsException e) {
-            System.err.println("backUpManifest() err : " + e.toString())
         }
     }
 

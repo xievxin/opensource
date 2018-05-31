@@ -8,6 +8,7 @@ import java.io.File;
  * Created by xievxin on 2018/5/22
  */
 public class RuntimeDataManager {
+
     public String pluginDir;
     public String zipSDKPath;
 

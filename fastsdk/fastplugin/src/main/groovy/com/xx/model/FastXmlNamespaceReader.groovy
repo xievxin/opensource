@@ -2,6 +2,7 @@ package com.xx.model
 
 class FastXmlNamespaceReader {
     Map read(File file) {
+        println("FastXmlNamespaceReader.read() : " + file?.path)
         FileReader fileReader = new FileReader(file)
 
         StringBuffer sb = new StringBuffer()

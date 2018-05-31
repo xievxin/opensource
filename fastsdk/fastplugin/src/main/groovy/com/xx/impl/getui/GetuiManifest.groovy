@@ -2,10 +2,14 @@ package com.xx.impl.getui
 
 import com.xx.interfaces.IManifest
 
+/**
+ * 个推SDK集成模块
+ * Created by xievxin on 2018/5/31
+ */
 class GetuiManifest extends IManifest {
 
     @Override
-    protected void appendApplicationNodes(def mkp, Node root) {
+    protected void appendApplicationNodes(Node root) {
         root.appendNode(IManifest.NODE_COMMENT, "个推SDK配置开始")
         root.appendNode(IManifest.NODE_COMMENT, "配置的第三方参数属性")
         root.appendNode(IManifest.NODE_COMMENT, "插件标识，请勿删除")
@@ -32,26 +36,26 @@ class GetuiManifest extends IManifest {
                 .appendNode("action", ["android:name": "android.intent.action.ACTION_POWER_CONNECTED"]).parent()
                 .appendNode("action", ["android:name": "android.intent.action.ACTION_POWER_DISCONNECTED"]).parent()
         root.appendNode("activity", [
-                "android:name": "com.igexin.sdk.PushActivity",
+                "android:name"              : "com.igexin.sdk.PushActivity",
                 "android:excludeFromRecents": "true",
-                "android:exported": "false",
-                "android:process": ":pushservice",
-                "android:taskAffinity": "com.igexin.sdk.PushActivityTask",
-                "android:theme": "@android:style/Theme.Translucent.NoTitleBar"
+                "android:exported"          : "false",
+                "android:process"           : ":pushservice",
+                "android:taskAffinity"      : "com.igexin.sdk.PushActivityTask",
+                "android:theme"             : "@android:style/Theme.Translucent.NoTitleBar"
         ])
         root.appendNode("activity", [
-                "android:name": "com.igexin.sdk.GActivity",
+                "android:name"              : "com.igexin.sdk.GActivity",
                 "android:excludeFromRecents": "true",
-                "android:exported": "true",
-                "android:process": ":pushservice",
-                "android:taskAffinity": "com.igexin.sdk.PushActivityTask",
-                "android:theme": "@android:style/Theme.Translucent.NoTitleBar"
+                "android:exported"          : "true",
+                "android:process"           : ":pushservice",
+                "android:taskAffinity"      : "com.igexin.sdk.PushActivityTask",
+                "android:theme"             : "@android:style/Theme.Translucent.NoTitleBar"
         ])
         root.appendNode(IManifest.NODE_COMMENT, "个推SDK配置结束")
     }
 
     @Override
-    protected void appendPermissionNodes(def mkp, Node root) {
+    protected void appendPermissionNodes(Node root) {
         root.appendNode("uses-permission", ["android:name": "android.permission.INTERNET"])
         root.appendNode("uses-permission", ["android:name": "android.permission.READ_PHONE_STATE"])
         root.appendNode("uses-permission", ["android:name": "android.permission.ACCESS_NETWORK_STATE"])
@@ -72,8 +76,9 @@ class GetuiManifest extends IManifest {
         root.appendNode("uses-permission", ["android:name": "android.permission.SYSTEM_ALERT_WINDOW"])
         root.appendNode(IManifest.NODE_COMMENT, "自定义权限")
         root.appendNode("uses-permission", ["android:name": "getui.permission.GetuiService.\${applicationId}"])
-        root.appendNode("permission",
-                ["android:name": "getui.permission.GetuiService.\${applicationId}", "android:protectionLevel": "normal"])
-        mkp.yield "\n"
+        root.appendNode("permission", [
+                "android:name"           : "getui.permission.GetuiService.\${applicationId}",
+                "android:protectionLevel": "normal"
+        ])
     }
 }
