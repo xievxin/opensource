@@ -30,9 +30,9 @@ class HttpUtil {
                 int percent
                 while ((len = is.read(b)) != -1) {  //先读到内存
                     fos.write(b, 0, len)
-                    percent = (int) ((totalLen+=len)*100/contentLen)
-                    if(lastPercent!=percent) {
-                        listener.onBuffer(lastPercent=percent)
+                    percent = (int) ((totalLen += len) * 100 / contentLen)
+                    if (lastPercent != percent) {
+                        listener.onBuffer(lastPercent = percent)
                     }
                 }
                 fos.flush()

@@ -1,10 +1,10 @@
 package com.xx.bean
 
-public class GtUserBean {
+class GtUserBean {
+
     String APP_ID
     String APP_KEY
     String APP_SECRET
-
 
     @Override
     public String toString() {

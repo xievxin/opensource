@@ -6,14 +6,12 @@ class FastXmlNamespaceReader {
 
         StringBuffer sb = new StringBuffer()
 
-        boolean _xml_start = false
         boolean _xml_end = false
         int len
         char c
         while ((len = fileReader.read()) != -1) {
             c = (char) len
             if (c == '<') {
-                _xml_start = true
                 continue
             } else if (c == '>') {
                 if (!_xml_end) {
@@ -22,18 +20,18 @@ class FastXmlNamespaceReader {
                 }
                 break
             } else {
-                if (_xml_start && _xml_end) {
+                if (_xml_end) {
                     sb.append(c)
                 }
             }
         }
         fileReader.close()
-        println("FastXmlNamespaceReader.read() : " + sb.toString()+"\n-------\n")
+        println("FastXmlNamespaceReader.read() : " + sb.toString() + "\n-------------\n")
 
         def xmlnsMap = [:]
         def attrs = sb.toString().trim().split("\\s+")
         attrs.each {
-            if(it.toString().startsWith("xmlns:")) {
+            if (it.toString().startsWith("xmlns:")) {
                 def str = it.toString().replaceFirst("xmlns:", "").split("=")
                 xmlnsMap.put(str[0], str[1].replaceAll("\"", ""))
             }

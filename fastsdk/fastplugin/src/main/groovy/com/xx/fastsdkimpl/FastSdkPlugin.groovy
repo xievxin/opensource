@@ -2,9 +2,10 @@ package com.xx.fastsdkimpl
 
 import com.xx.bean.GtUserBean
 import com.xx.exception.GroovyException
-import com.xx.interfaces.Callback
+import com.xx.impl.getui.GetuiManifest
+import com.xx.impl.getyan.GetyanManifest
 import com.xx.interfaces.DownloadListener
-import com.xx.model.FastXmlNamespaceReader
+import com.xx.interfaces.IManifest
 import com.xx.model.HttpUtil
 import com.xx.model.RuntimeDataManager
 import groovy.xml.StreamingMarkupBuilder
@@ -20,7 +21,6 @@ class FastSdkPlugin implements Plugin<Project> {
     Project project
     def process = [""]
     def space = [""]
-    def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
 
     @Override
     void apply(Project project) {
@@ -36,32 +36,21 @@ class FastSdkPlugin implements Plugin<Project> {
         RuntimeDataManager.mProject = project
 
 //        if (downloadLibs()) {
-        readLocalProperties()
+            readLocalProperties()
 //            configLibs()
-        try {
-            configManifest()
-        } catch (GroovyException e) {
-            System.err.println("err : " + e.toString())
-        }
+            try {
+                configManifest()
+            } catch (GroovyException e) {
+                System.out.println("err : " + e.toString())
+            }
 //        }
 
-//        test()
         println("*******************fastsdk OVER*******************")
-    }
-
-    void test() {
-        println("*************apptest start***********")
-        int count = 1
-        while (count++ < 40) {
-            print("\r" + count + "%")
-            sleep(100)
-        }
-        println("*************apptest end3*************")
     }
 
     void initArr() {
         int index = 20
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder()
         while (index-- > 0) {
             process << sb.append("=").toString()
         }
@@ -104,7 +93,7 @@ class FastSdkPlugin implements Plugin<Project> {
      * @return true download success or already exist, false otherwise
      */
     private final boolean downloadLibs() {
-        def url = "https://nj01ct01.baidupcs.com/file/06d4fbd2064dba0bd58dd20f816ca9ec?bkt=p3-140006d4fbd2064dba0bd58dd20f816ca9ecd53f038d0000000850fe&fid=2735751894-250528-284663320752002&time=1527563724&sign=FDTAXGERLQBHSK-DCb740ccc5511e5e8fedcff06b081203-PP5xwqfnFsvGciJAfJx6rPa%2FU%2BY%3D&to=63&size=545022&sta_dx=545022&sta_cs=2&sta_ft=zip&sta_ct=2&sta_mt=2&fm2=MH%2CYangquan%2CAnywhere%2C%2Czhejiang%2Cct&vuk=2735751894&iv=0&newver=1&newfm=1&secfm=1&flow_ver=3&pkey=140006d4fbd2064dba0bd58dd20f816ca9ecd53f038d0000000850fe&sl=76480590&expires=8h&rt=sh&r=262383623&mlogid=3443415952727509538&vbdid=2202615538&fin=gtSDK.zip&fn=gtSDK.zip&rtype=1&dp-logid=3443415952727509538&dp-callid=0.1.1&hps=1&tsl=80&csl=80&csign=LraYTFNsTcoKxtvKhl9vaKsgqBk%3D&so=0&ut=6&uter=4&serv=0&uc=2361768026&ic=1484612705&ti=9019d4fba4d9bad6355a596bb26caac2d2d738111080d957&by=themis"
+        def url = "http://dl.download.csdn.net/down11/20180530/cbfd14cd8b11607923e06035e74c677e.zip?response-content-disposition=attachment%3Bfilename%3D%22gtSDK.zip%22&OSSAccessKeyId=9q6nvzoJGowBj4q1&Expires=1527644906&Signature=OO4KppijNkhV31%2Fg23Iz3y5poLg%3D&user=u011511577&sourceid=10446483&sourcescore=1&isvip=0/WHJMrwNw1k%252FFdegHt2HMgBWzhgXifPz76jcUkcmdsrQVXAQwSZRELt4N9CIxqQWE4LPp2%252B%252BKtbwo2t1p%252FkugVdiXQrd60HRwL6Gjltw3Kj%252FAr8hkppZoTSDzKpMz452nQnaRn2PbV%252BA0fhwDCeHJsqFqRPoL7FhKirjl%252Bd2XxfVgWSI5uOU7YnRqP9E0DXwxYNmwgTPXDoBUOnY0e2JTXIlG9s13y6RoatBgdotK%252BUF10JbW2V3IPOZq5LEgmblPG1487582755342"
         File libFile = createLibFile()
         if (!libFile.exists()) {
             boolean flag = new HttpUtil().download(project, url, libFile, new DownloadListener() {
@@ -215,7 +204,7 @@ class FastSdkPlugin implements Plugin<Project> {
 
         // 解析
         def xmlParser = new XmlParser().parse(appFile)
-//        def xmlParser = new XmlSlurper().parse(appFile)
+//        def xmlParser = new XmlSlurper().parse(appFile) // todo 直接使用android：?
         println("parse 'manifest.xml' success...")
 
 //        xmlParser.application?."meta-data"?.each { Node node ->
@@ -227,182 +216,24 @@ class FastSdkPlugin implements Plugin<Project> {
 //            }
 //        }
 
-        def xmlnsMap = new FastXmlNamespaceReader().read(appFile)
-
-        def result = {
-            mkp.xmlDeclaration()
-            xmlnsMap?.each { key, value ->
-                mkp.declareNamespace("${key}": value)
-            }
-            manifest(xmlParser.attributes()) {
-                def getAttrs = { Node node, int tabCount ->
-                    def attrMap = [:]
-                    int size = node.attributes().size()
-                    node?.attributes()?.each { key, value ->
-                        String keyStr = key.toString()
-                        xmlnsMap?.each { xkey, xvalue ->
-                            if (keyStr.contains(xvalue.toString())) {
-                                keyStr = keyStr.replaceFirst("\\{${xvalue.toString()}\\}", "${xkey}:")
-                            }
-                        }
-                        attrMap.put((size > 1 ? "\n" + tabs[tabCount] : "") + keyStr, value)
-                    }
-                    attrMap
-                }
-                def appXml = { int count ->
-                    mkp.yield("\n" + tabs[count])
-                    mkp.comment("个推SDK配置开始")
-                    mkp.yield("\n" + tabs[count])
-                    mkp.comment("配置的第三方参数属性")
-                    mkp.yield("\n" + tabs[count])
-                    "meta-data"("android:name": "PUSH_FLAG", "android:value": "")    // 配置标识，Manifest中有的话，中断
-                    mkp.comment("插件标识，请勿删除")
-                    mkp.yield("\n" + tabs[count])
-                    "meta-data"("android:name": "PUSH_APPID", "android:value": "${project.gtUser.APP_ID}")
-                    mkp.yield("\n" + tabs[count])
-                    "meta-data"("android:name": "PUSH_APPKEY", "android:value": "${project.gtUser.APP_KEY}")
-                    mkp.yield("\n" + tabs[count])
-                    "meta-data"("android:name": "PUSH_APPSECRET", "android:value": "${project.gtUser.APP_SECRET}}")
-                    mkp.yield("\n" + tabs[count])
-                    mkp.comment("配置SDK核心服务")
-                    mkp.yield("\n" + tabs[count])
-                    service("\n${tabs[count + 1]}android:name": "com.igexin.sdk.PushService",
-                            "\n${tabs[count + 1]}android:exported": "true",
-                            "\n${tabs[count + 1]}android:label": "NotificationCenter",
-                            "\n${tabs[count + 1]}android:process": ":pushservice") {
-                        mkp.yield("\n" + tabs[count + 1])
-                        "intent-filter" {
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "com.igexin.sdk.action.service.message")
-                            mkp.yield("\n" + tabs[count + 1])
-                        }
-                        mkp.yield("\n" + tabs[count])
-                    }
-                    mkp.yield("\n" + tabs[count])
-                    receiver("android:name": "com.igexin.sdk.PushReceiver") {
-                        mkp.yield("\n" + tabs[count + 1])
-                        "intent-filter" {
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "android.intent.action.BOOT_COMPLETED")
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "android.net.conn.CONNECTIVITY_CHANGE")
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "android.intent.action.USER_PRESENT")
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "com.igexin.sdk.action.refreshls")
-                            mkp.yield("\n" + tabs[count + 2])
-                            mkp.comment("以下三项为可选的action声明，可大大提高service存活率和消息到达速度")
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "android.intent.action.MEDIA_MOUNTED")
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "android.intent.action.ACTION_POWER_CONNECTED")
-                            mkp.yield("\n" + tabs[count + 2])
-                            action("android:name": "android.intent.action.ACTION_POWER_DISCONNECTED")
-                            mkp.yield("\n" + tabs[count + 1])
-                        }
-                        mkp.yield("\n" + tabs[count])
-                    }
-                    mkp.yield("\n" + tabs[count])
-                    activity("\n${tabs[count + 1]}android:name": "com.igexin.sdk.PushActivity",
-                            "\n${tabs[count + 1]}android:excludeFromRecents": "true",
-                            "\n${tabs[count + 1]}android:exported": "false",
-                            "\n${tabs[count + 1]}android:process": ":pushservice",
-                            "\n${tabs[count + 1]}android:taskAffinity": "com.igexin.sdk.PushActivityTask",
-                            "\n${tabs[count + 1]}android:theme": "@android:style/Theme.Translucent.NoTitleBar")
-                    mkp.yield("\n" + tabs[count])
-                    activity("\n${tabs[count + 1]}android:name": "com.igexin.sdk.GActivity",
-                            "\n${tabs[count + 1]}android:excludeFromRecents": "true",
-                            "\n${tabs[count + 1]}android:exported": "true",
-                            "\n${tabs[count + 1]}android:process": ":pushservice",
-                            "\n${tabs[count + 1]}android:taskAffinity": "com.igexin.sdk.PushActivityTask",
-                            "\n${tabs[count + 1]}android:theme": "@android:style/Theme.Translucent.NoTitleBar")
-                    mkp.yield("\n" + tabs[count])
-                    mkp.comment("个推SDK配置结束")
-                    mkp.yield("\n\t")
-                }
-                def parseChild = { Iterator<Node> nodeIt, int deepCount, Callback callback ->
-                    while (nodeIt.hasNext()) {
-                        mkp.yield("\n" + tabs[deepCount])
-                        def nd = nodeIt.next()
-                        // 没有子节点就以“/>”结尾
-                        if (!nd.children()) {
-                            "${nd.name()}"(getAttrs(nd, deepCount + 1))
-                            continue
-                        }
-                        "${nd.name()}"(getAttrs(nd, deepCount + 1))
-                                {
-                                    callback.onCall(nd, deepCount + 1)
-                                    if ("application".equalsIgnoreCase(nd.name())) {
-                                        appXml(2)
-                                    }
-                                }
-                    }
-                    mkp.yield("\n" + tabs[deepCount - 1])
-                }
-                def getChildStr = { Node node ->
-                    if (node.children()) {
-                        parseChild(node.iterator(), 1, new Callback() {
-                            @Override
-                            void onCall(Node nd, int curDeepCount) {
-                                parseChild(nd.iterator(), curDeepCount, this)
-                            }
-                        })
-                    }
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.INTERNET")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.READ_PHONE_STATE")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.ACCESS_NETWORK_STATE")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.CHANGE_WIFI_STATE")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.ACCESS_WIFI_STATE")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.WAKE_LOCK")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.RECEIVE_BOOT_COMPLETED")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.WRITE_EXTERNAL_STORAGE")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.VIBRATE")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.GET_TASKS")
-                    mkp.yield("\n" + tabs[1])
-                    mkp.comment("支持iBeancon 需要蓝牙权限")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.BLUETOOTH")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.BLUETOOTH_ADMIN")
-                    mkp.yield("\n" + tabs[1])
-                    mkp.comment("支持个推3.0 电子围栏功能")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.ACCESS_FINE_LOCATION")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.ACCESS_COARSE_LOCATION")
-                    mkp.yield("\n" + tabs[1])
-                    mkp.comment("浮动通知权限")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "android.permission.SYSTEM_ALERT_WINDOW")
-                    mkp.yield("\n" + tabs[1])
-                    mkp.comment("自定义权限")
-                    mkp.yield("\n" + tabs[1])
-                    "uses-permission"("android:name": "getui.permission.GetuiService.\${applicationId}")
-                    mkp.yield("\n" + tabs[1])
-                    "permission"("android:name": "getui.permission.GetuiService.\${applicationId}", "android:protectionLevel": "normal")
-                    mkp.yield "\n"
-                }
-                getChildStr(xmlParser)
-            }
+        int type = 1    // 模拟从服务器去到的已开通功能
+        IManifest manifest
+        if(type==1) {
+            manifest = new GetuiManifest()
+        }else if(type==2) {
+            manifest = new GetyanManifest()
         }
 
-        def doc = new StreamingMarkupBuilder().bind(result)
-//        def writer = new FileWriter(appFile)
-        def writer = new FileWriter(new File(project.name + "/src/main/test.xml"))
-        try {
-            writer << doc
-        } finally {
-            writer.close()
+        if(manifest) {
+            manifest.init(project, appFile, xmlParser)
+            def doc = new StreamingMarkupBuilder().bind(manifest.result)
+//            def writer = new FileWriter(appFile)
+            def writer = new FileWriter(new File(project.name + "/src/main/test.xml"))
+            try {
+                writer << doc
+            } finally {
+                writer.close()
+            }
         }
     }
 
