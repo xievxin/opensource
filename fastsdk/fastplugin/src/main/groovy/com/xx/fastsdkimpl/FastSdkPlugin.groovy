@@ -12,8 +12,6 @@ import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
 import java.util.zip.ZipFile
 
 class FastSdkPlugin implements Plugin<Project> {
@@ -35,7 +33,7 @@ class FastSdkPlugin implements Plugin<Project> {
         project.extensions.create('gtUser', GtUserBean)
         RuntimeDataManager.mProject = project
 
-        if (downloadLibs()) {
+        if (downloadSDK()) {
             readLocalProperties()
             configLibs()
             try {
@@ -92,47 +90,47 @@ class FastSdkPlugin implements Plugin<Project> {
      * @param project
      * @return true download success or already exist, false otherwise
      */
-    private final boolean downloadLibs() {
-        def url = "http://dl.download.csdn.net/down11/20180530/cbfd14cd8b11607923e06035e74c677e.zip?response-content-disposition=attachment%3Bfilename%3D%22gtSDK.zip%22&OSSAccessKeyId=9q6nvzoJGowBj4q1&Expires=1527752714&Signature=dXNK9WWcUAWkCxCENjKcm6vSHrE%3D&user=u011511577&sourceid=10446483&sourcescore=1&isvip=0/WHJMrwNw1k%252FFdegHt2HMgBa33CwlSz57TPGjalPnOg37OLoWVZgQr4DG4FtLhNSlxsy530jgkzlCLb079zK5I6%252FAiKMrVYa%252BLvBzQ6y%252FqRr7M90FhL7%252BAY90zlieX3yDdb2GXgZ5AQVLgNbDRG79R%252B7f1T5xekz1fJB82l5Rly3zfoFAHrTKtbgkPdNcFYAABEU5AHex%252F3lp0yh1kDoYFG8N2R08wUhd1N%252BtKtKrMo8HzqTvTNUQt4j4kGeHoWDZp1487582755342"
+    private final boolean downloadSDK() {
+        final def url = "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip"
         File libFile = createLibFile()
-        if (!libFile.exists()) {
-            boolean flag = new HttpUtil().download(project, url, libFile, new DownloadListener() {
+        int retryCount = 3
+        while (retryCount-- > 0) {
+            boolean flag = new HttpUtil().download(url, libFile, new DownloadListener() {
 
                 Writer writer = System.out.newPrintWriter()
-                int retryCount = 2
 
                 @Override
                 void onStart() {
-                    println("start downloadLibs")
+                    println("start downloadSDK")
                 }
 
                 @Override
                 void onBuffer(int percent) {
-//                    println("onBuffer : "+percent)
+//                    println("onBuffer : " + percent)
                     int index = (int) (percent / 5)
                     writer.write("\r<" +
                             (index ? "\033[1;32m" + process[index] + "\033[0m" : "")
                             + space[20 - index] + ">\t" + percent + "%")
                     writer.flush()
-                }
-
-                @Override
-                void onFinished() {
-                    println("\n下载成功 End downloadLibs, libFile is " + (libFile?.exists() ? "loaded" : "no exist"))
+                    if (percent == 100) {
+                        println("\n下载成功 End downloadSDK, libFile is " + (libFile?.exists() ? "loaded" : "no exist"))
+                    }
                 }
 
                 @Override
                 void onError(String errMsg) {
                     System.err.println(errMsg)
-                    if (retryCount > 0 && (libFile.exists() ? libFile.delete() : true)) {
-                        println("还剩余${retryCount--}次download重试")
-                        new HttpUtil().download(project, url, libFile, this)
-                    }
                 }
             })
-            return flag
+
+            if (flag) {
+                return true
+            } else {
+                println("还剩余${retryCount}次下载重试次数")
+            }
         }
-        true
+
+        throw new GroovyException("SDK download failed")
     }
 
     private final void configLibs() {
@@ -201,7 +199,6 @@ class FastSdkPlugin implements Plugin<Project> {
 
         // 解析
         def xmlRoot = new XmlParser().parse(manifestFile)
-//        def xmlRoot = new XmlSlurper().parse(manifestFile) // todo 直接使用android：?
         println("parse 'manifest.xml' success...")
 
         xmlRoot.application?."meta-data"?.each { Node node ->

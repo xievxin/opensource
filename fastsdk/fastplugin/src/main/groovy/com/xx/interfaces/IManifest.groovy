@@ -24,7 +24,8 @@ abstract class IManifest {
 
     static final String BackupManifestName = "OldAndroidManifest"
 
-    static def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
+    static
+    def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
 
     boolean isInited = false
     Project project
@@ -55,8 +56,8 @@ abstract class IManifest {
     }
 
     /**
-     *  application节点下拼接
-     *  activity、service、receiver、provider等
+     * application节点下拼接
+     * activity、service、receiver、provider等
      * @param root < manifest>
      */
     protected abstract void appendApplicationNodes(Node root)
@@ -70,7 +71,7 @@ abstract class IManifest {
 
     final def result = {
         if (!isInited) {
-            throw new UnCaughtException(" : u must init() it before use")
+            throw new UnCaughtException(" u must init() it before use")
         }
         def xmlnsMap = new FastXmlNamespaceReader().read(oldManifestFile)
         Node applicationRootNode = new Node(null, "appRoot")
@@ -96,7 +97,7 @@ abstract class IManifest {
                 }
                 attrMap
             }
-            def parseChild = { Iterator<Node> nodeIt, int deepCount, Callback callback ->
+            def parseChild = { Iterator<Node> nodeIt, int deepCount, NodeCallback callback ->
                 while (nodeIt.hasNext()) {
                     mkp.yield("\n" + tabs[deepCount])
                     def nd = nodeIt.next()
@@ -126,7 +127,7 @@ abstract class IManifest {
             }
             def getChildStr = { Node node ->
                 if (node.children()) {
-                    parseChild(node.iterator(), 1, new Callback() {
+                    parseChild(node.iterator(), 1, new NodeCallback() {
                         @Override
                         void onCall(Node nd, int curDeepCount) {
                             parseChild(nd.iterator(), curDeepCount, this)

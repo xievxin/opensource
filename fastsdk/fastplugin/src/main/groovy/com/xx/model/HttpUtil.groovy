@@ -1,29 +1,40 @@
 package com.xx.model
 
 import com.xx.interfaces.DownloadListener
-import org.gradle.api.Project
-
 /**
  * Created by xievxin on 2018/5/22
  */
 class HttpUtil {
 
-    boolean download(Project project, String url, def outFile, DownloadListener listener) {
+    boolean download(String url, File outFile, DownloadListener listener) {
         boolean flag = false
         InputStream is
-        FileOutputStream fos
+        RandomAccessFile fos
+        int curLen = outFile.length()
         try {
             listener.onStart()
             URL httpUrl = new URL(url)
-            HttpURLConnection conn = (HttpURLConnection) httpUrl.openConnection()
+            URLConnection conn = httpUrl.openConnection()
             conn.setConnectTimeout(20_000)
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                is = conn.getInputStream()
-                fos = new FileOutputStream(outFile)
-
                 int contentLen = conn.getContentLength()
+                if(contentLen==curLen) {
+                    // already exist
+                    listener.onBuffer(100)
+                    return true
+                }
                 int totalLen
                 int lastPercent
+
+                conn = httpUrl.openConnection()
+                conn.addRequestProperty("Range", "bytes=" + curLen + "-" + contentLen)
+                if(contentLen != conn.getContentLength()) {
+                    throw new IllegalArgumentException("server has changed SDK file, pls try again")
+                }
+
+                is = conn.getInputStream()
+                fos = new RandomAccessFile(outFile, "rw")
+                fos.seek(curLen)
 
                 byte[] b = new byte[1024]
                 int len = 0
@@ -35,12 +46,10 @@ class HttpUtil {
                         listener.onBuffer(lastPercent = percent)
                     }
                 }
-                fos.flush()
                 b = null
                 flag = true
-                listener.onFinished()
             } else {
-                listener.onError("gtPlugins download err!!errCode is : " + conn.getResponseCode())
+                listener.onError("gtPlugins download err!!resCode is : " + conn.getResponseCode())
             }
         } catch (Exception e) {
             e.printStackTrace()
