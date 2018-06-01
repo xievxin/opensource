@@ -2,10 +2,10 @@
 
 FastSDK
 ====
-提供简单便捷的个推SDK集成方案。fastsdk与普通集成方式（用户自己下载SDK集成、maven）不同之处在于：  
+提供简单便捷的个推SDK集成方案。fastsdk与普通集成方式（用户自己下载SDK集成、maven）相比优势在于：  
 >1. 步骤简单且门槛比maven更低  
->2. 控制更新  
->3. 定制化(用户无须更改任何代码即可实现定制化变更)  
+>2. 控制更新（普通集成方式甚至无法更新）  
+>3. 定制化（用户无须更改任何代码即可实现定制化变更）  
 >4. 一键式集成（一套API自动集成`每日互动`旗下已开通的所有业务）
 
   
@@ -41,8 +41,10 @@ buildscript{
 }
 apply plugin: 'com.xx.fastsdk'
 ```  
-  
-OVER!!
+    
+    
+OVER!!  
+
 ## 开始验证
 #### 1.随便找个入口初始化
 ```Java
@@ -52,7 +54,7 @@ PushManager.getInstance().initialize(context, null);
   
 ![](readme/image/sdk04.png)
   
-整个插件的build过程只花了  
+而整个插件的build过程只用了  
 
 ![](readme/image/sdk03.png)
 
