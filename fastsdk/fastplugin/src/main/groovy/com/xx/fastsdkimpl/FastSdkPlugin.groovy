@@ -11,7 +11,10 @@ import com.xx.model.RuntimeDataManager
 import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.internal.project.DefaultProject
+import org.gradle.api.internal.tasks.DefaultTaskContainer
 
+import java.lang.reflect.Method
 import java.util.zip.ZipFile
 
 class FastSdkPlugin implements Plugin<Project> {
@@ -33,8 +36,9 @@ class FastSdkPlugin implements Plugin<Project> {
         project.extensions.create('gtUser', GtUserBean)
         RuntimeDataManager.mProject = project
 
+        addTask()
+        readLocalProperties()
         if (downloadSDK()) {
-            readLocalProperties()
             configLibs()
             try {
                 configManifest()
@@ -60,6 +64,27 @@ class FastSdkPlugin implements Plugin<Project> {
         }
     }
 
+    void addTask() {
+        try {
+            def taskContainerField = DefaultProject.class.getDeclaredField("taskContainer")
+            taskContainerField.setAccessible(true)
+            def taskContainer = taskContainerField.get(project)
+
+            // public <T extends Task> T create(String name, Class<T> type) {
+            Method createMhd = DefaultTaskContainer.class.getDeclaredMethod("create", String.class, Class.class)
+            createMhd.invoke(taskContainer, "fastsdk", FastTask.class)
+            println("addTask 'fastsdk'")
+
+//            project.getTasksByName("fastsdk", false).each {Task task->
+//                if(task.getClass().simpleName.startsWith("FastTask")) {
+//                    task.doFirst {}
+//                }
+//            }
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
+    }
+
     /**
      * 后期服务端提供 applicationId查APPID的接口后可删除
      */
@@ -72,6 +97,7 @@ class FastSdkPlugin implements Plugin<Project> {
         usr.APP_ID = properties.getProperty("GETUI_APP_ID")
         usr.APP_KEY = properties.getProperty("GETUI_APP_KEY")
         usr.APP_SECRET = properties.getProperty("GETUI_APP_SECRET")
+        usr.skipNetCheck = Boolean.parseBoolean(properties.getProperty("skipNetCheck"))
 
         if (!usr.APP_ID) {
             System.err.println("GETUI_APP_ID not found")
@@ -93,7 +119,7 @@ class FastSdkPlugin implements Plugin<Project> {
     private final boolean downloadSDK() {
         final def url = "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip"
         File libFile = createLibFile()
-        int retryCount = 3
+        int retryCount = 5
         while (retryCount-- > 0) {
             boolean flag = new HttpUtil().download(url, libFile, new DownloadListener() {
 
@@ -128,6 +154,12 @@ class FastSdkPlugin implements Plugin<Project> {
             } else {
                 println("还剩余${retryCount}次下载重试次数")
             }
+        }
+
+        def usr = project.gtUser as GtUserBean
+        if(usr.skipNetCheck) {
+            System.err.println("Network err!!Suggest you 'Rebuild Project' when network is fine")
+            return false
         }
 
         throw new GroovyException("SDK download failed")

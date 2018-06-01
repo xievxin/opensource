@@ -1,3 +1,9 @@
 
-# Getting started
 
+FastSDK
+====
+
+	提供简单便捷的个推SDK集成方案，梦想成为未来`每日互动`旗下一键式集成解决方案。
+	fastsdk与普通集成方式（用户自己下载SDK集成、maven）不同的是：
+	
+#  1
