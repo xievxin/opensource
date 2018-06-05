@@ -110,7 +110,7 @@ class FastSdkPlugin extends BasePlugin {
 
     /**
      * 下载最新sdk包
-     * //todo 应该先调个检查更新的接口
+     * todo 应该先调个检查更新的接口
      * @param project
      * @return true download success or already exist, false otherwise
      */

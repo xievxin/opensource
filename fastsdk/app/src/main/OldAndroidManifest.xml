@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.xx.fasksdk">
+    xmlns:tools="http://schemas.android.com/apk/res/tool"
+    package="com.xx.fasksdk"
+    versionCode="666">
 
     <application
         android:allowBackup="true"

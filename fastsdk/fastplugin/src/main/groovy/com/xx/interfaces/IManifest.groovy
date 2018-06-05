@@ -136,11 +136,17 @@ abstract class IManifest {
         }
 
         mkp.xmlDeclaration()
+//        mkp.declareNamespace("${key}": value)
+        def tempMap = [:]
+        boolean isFirst = true
         xmlnsMap?.each { key, value ->
-            mkp.declareNamespace("${key}": value)
+            tempMap.put("${isFirst?"":"\n\t"}xmlns:${key}".toString(), value)
+            isFirst = false
         }
-        //  todo manifest中有“android:”--BUG
-        manifest(xmlRoot.attributes()) {
+        xmlRoot.attributes().each {key, value ->
+            tempMap.put("\n\t"+key, value)
+        }
+        manifest(tempMap) {
             def getAttrs = { Node node, int tabCount ->
                 def attrMap = [:]
                 int size = node.attributes().size()
@@ -207,6 +213,7 @@ abstract class IManifest {
             appendPermissionNodes()
             curRoot = null
 
+            mkp.yield("\n")
             getChildStr(xmlRoot)
             pmsMap.clear()
             getChildStr(pmsRoot)
