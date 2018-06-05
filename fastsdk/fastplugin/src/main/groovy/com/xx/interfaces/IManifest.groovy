@@ -26,7 +26,7 @@ abstract class IManifest {
     /**
      * 备份Manifest，稳定后可拿掉
      */
-    static final String BackupManifestName = "OldAndroidManifest.xml"
+    static final String BackupManifestName = "backupManifest.xml"
 
     static
     def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
@@ -38,7 +38,7 @@ abstract class IManifest {
     Node xmlRoot
     def xmlnsMap
 
-    def commentList = [:]    // 已有的注释
+    def curRoot
     Node compRoot = new Node(null, "compRoot")
     Node pmsRoot = new Node(null, "pmsRoot")
     HashMap<String, Object> compMap = new HashMap()   // 已存在的四大组件
@@ -54,12 +54,7 @@ abstract class IManifest {
         this.project = project
         // 顺序hin重要
         realInit()
-
-        // 先备份一下
         backUpManifest()
-
-        commentList = new FastXmlReader().readComments(manifestFile)
-
         isInited = true
     }
 
@@ -73,6 +68,10 @@ abstract class IManifest {
         recoverNamespace1(xmlRoot)
     }
 
+    /**
+     * 把转换了的“{http....}”域名替换掉
+     * @param root
+     */
     void recoverNamespace1(Node root) {
         def map = root.attributes()
         def temMap = [:]
@@ -117,28 +116,12 @@ abstract class IManifest {
         return _appendNode(name, new HashMap(), value)
     }
 
-    final
-    def componentsArr = ["meta-data", "activity", "service", "receiver", "provider", "uses-permission", "permission"]
-
     private Node _appendNode(String name, Map attributes, Object value) {
-//        if (compRoot == null) {
-//            throw new UnCaughtException("compRoot is null")
-//        }
-//        if (name == NODE_COMMENT && commentList.containsKey(value)) {
-//            println("comment exist : " + value)
-//            return null
-//        }
-//        if ((name in componentsArr) && compMap.containsKey(attributes.get("android:name"))) {
-//            return null
-//        }
-        def curRoot
         attributes.keySet().each {
             if (it.toString() == "android:name") {
-                if (name == "permission" || name == "uses-permission") {
-                    curRoot = pmsRoot
+                if (isPermissionTag(name)) {
                     pmsMap.put(attributes.get(it), null)
                 } else {
-                    curRoot = compRoot
                     compMap.put(attributes.get(it), null)
                 }
             }
@@ -179,8 +162,10 @@ abstract class IManifest {
                         mkp.yield("\n" + tabs[deepCount])
                         mkp.yield(nd.text())
                         continue
-                    } else if (compMap.containsKey(nd.attribute("android:name"))
-                            || pmsMap.containsKey(nd.attribute("android:name"))) {
+                    } else if (isPermissionTag(name)) {
+                        if (pmsMap.containsKey(nd.attribute("android:name")))
+                            continue
+                    } else if (compMap.containsKey(nd.attribute("android:name"))) {
                         continue
                     }
 
@@ -191,12 +176,16 @@ abstract class IManifest {
                         "${name}"(getAttrs(nd, deepCount + 1))
                         continue
                     }
-                    "${nd.name()}"(getAttrs(nd, deepCount + 1)) {
+                    "${name}"(getAttrs(nd, deepCount + 1)) {
                         callback.onCall(nd, deepCount + 1)
                         if ("application" == name) {
                             compMap.clear()
                             callback.onCall(compRoot, deepCount + 1)
                         }
+                    }
+                    if ("application" == name) {
+                        // 和permission节点间隔2行
+                        mkp.yield("\n\n")
                     }
                 }
                 mkp.yield("\n" + tabs[deepCount - 1])
@@ -212,24 +201,32 @@ abstract class IManifest {
                 }
             }
 
+            curRoot = compRoot
             appendApplicationNodes()
+            curRoot = pmsRoot
             appendPermissionNodes()
+            curRoot = null
+
             getChildStr(xmlRoot)
             pmsMap.clear()
             getChildStr(pmsRoot)
         }
     }
 
+    boolean isPermissionTag(String tag) {
+        tag == "permission" || tag == "uses-permission"
+    }
+
+    /**
+     * 每次运行前给用户备份一下
+     */
     private void backUpManifest() {
-        println("backUpManifest...")
         if (oldManifestFile.exists()) {
-            return
+            if (!oldManifestFile.delete()) {
+                return
+            }
         }
-        try {
-            Files.copy(manifestFile.toPath(), oldManifestFile.toPath())
-        } catch (FileAlreadyExistsException e) {
-            System.err.println("backUpManifest() err : " + e.toString())
-        }
+        Files.copy(manifestFile.toPath(), oldManifestFile.toPath())
     }
 
 }

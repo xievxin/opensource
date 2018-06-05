@@ -35,7 +35,6 @@ class FastSdkPlugin extends BasePlugin {
         project.extensions.create('gtUser', GtUserBean)
         RuntimeDataManager.mProject = project
 
-        addTask()
         readLocalProperties()
         if (downloadSDK()) {
             configLibs()
@@ -232,14 +231,14 @@ class FastSdkPlugin extends BasePlugin {
         def xmlRoot = new XmlParser().parse(manifestFile)
         println("parse 'manifest.xml' success...")
 
-//        xmlRoot.application?."meta-data"?.each { Node node ->
-//            node.attributes().each {
-//                String[] arr = it.toString().split("=")
-//                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
-//                    throw new GroovyException("manifest was configured")
-//                }
-//            }
-//        }
+        xmlRoot.application?."meta-data"?.each { Node node ->
+            node.attributes().each {
+                String[] arr = it.toString().split("=")
+                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
+                    throw new GroovyException("manifest was configured")
+                }
+            }
+        }
 
         int type = 1    // 模拟从服务器取到的已开通功能
         IManifest manifest
