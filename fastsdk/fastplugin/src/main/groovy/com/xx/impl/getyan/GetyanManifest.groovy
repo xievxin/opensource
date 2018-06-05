@@ -8,12 +8,12 @@ import com.xx.interfaces.IManifest
  */
 class GetyanManifest extends IManifest {
     @Override
-    protected void appendApplicationNodes(Node root) {
+    protected void appendApplicationNodes() {
 
     }
 
     @Override
-    protected void appendPermissionNodes(Node root) {
+    protected void appendPermissionNodes() {
 
     }
 }

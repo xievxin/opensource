@@ -9,7 +9,6 @@ import com.xx.interfaces.IManifest
 import com.xx.model.HttpUtil
 import com.xx.model.RuntimeDataManager
 import groovy.xml.StreamingMarkupBuilder
-import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.internal.project.DefaultProject
 import org.gradle.api.internal.tasks.DefaultTaskContainer
@@ -17,7 +16,7 @@ import org.gradle.api.internal.tasks.DefaultTaskContainer
 import java.lang.reflect.Method
 import java.util.zip.ZipFile
 
-class FastSdkPlugin implements Plugin<Project> {
+class FastSdkPlugin extends BasePlugin {
 
     Project project
     def process = [""]
@@ -157,9 +156,9 @@ class FastSdkPlugin implements Plugin<Project> {
         }
 
         def usr = project.gtUser as GtUserBean
-        if(usr.skipNetCheck) {
+        if (usr.skipNetCheck) {
             System.err.println("Network err!!Suggest you 'Rebuild Project' when network is fine")
-            return false
+            return true
         }
 
         throw new GroovyException("SDK download failed")
@@ -233,14 +232,14 @@ class FastSdkPlugin implements Plugin<Project> {
         def xmlRoot = new XmlParser().parse(manifestFile)
         println("parse 'manifest.xml' success...")
 
-        xmlRoot.application?."meta-data"?.each { Node node ->
-            node.attributes().each {
-                String[] arr = it.toString().split("=")
-                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
-                    throw new GroovyException("manifest was configured")
-                }
-            }
-        }
+//        xmlRoot.application?."meta-data"?.each { Node node ->
+//            node.attributes().each {
+//                String[] arr = it.toString().split("=")
+//                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
+//                    throw new GroovyException("manifest was configured")
+//                }
+//            }
+//        }
 
         int type = 1    // 模拟从服务器取到的已开通功能
         IManifest manifest

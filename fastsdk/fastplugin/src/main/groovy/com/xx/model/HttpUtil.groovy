@@ -1,6 +1,7 @@
 package com.xx.model
 
 import com.xx.interfaces.DownloadListener
+
 /**
  * Created by xievxin on 2018/5/22
  */
@@ -18,7 +19,7 @@ class HttpUtil {
             conn.setConnectTimeout(20_000)
             if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 int contentLen = conn.getContentLength()
-                if(contentLen==curLen) {
+                if (contentLen == curLen) {
                     // already exist
                     listener.onBuffer(100)
                     return true
@@ -28,7 +29,7 @@ class HttpUtil {
 
                 conn = httpUrl.openConnection()
                 conn.addRequestProperty("Range", "bytes=" + curLen + "-" + contentLen)
-                if(contentLen != conn.getContentLength()) {
+                if (contentLen != conn.getContentLength()) {
                     throw new IllegalArgumentException("server has changed SDK file, pls try again")
                 }
 

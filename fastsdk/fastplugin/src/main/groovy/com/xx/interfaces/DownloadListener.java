@@ -8,6 +8,7 @@ public interface DownloadListener {
 
     /**
      * 下载进度
+     * 
      * @param percent 0~100
      */
     void onBuffer(int percent);

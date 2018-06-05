@@ -1,7 +1,7 @@
 package com.xx.interfaces
 
 import com.xx.exception.UnCaughtException
-import com.xx.model.FastXmlNamespaceReader
+import com.xx.model.FastXmlReader
 import org.gradle.api.Project
 
 import java.nio.file.FileAlreadyExistsException
@@ -22,7 +22,10 @@ abstract class IManifest {
      */
     static final String NODE_YIELD = "gtp_yield"
 
-    static final String BackupManifestName = "OldAndroidManifest"
+    /**
+     * 备份Manifest，稳定后可拿掉
+     */
+    static final String BackupManifestName = "OldAndroidManifest.xml"
 
     static
     def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
@@ -32,6 +35,11 @@ abstract class IManifest {
     File manifestFile
     File oldManifestFile
     Node xmlRoot
+    def xmlnsMap
+    Node curRoot
+
+    def commentList = [:]    // 已有的注释
+    HashMap<String, Object> nodeList = new HashMap()   // 已存在的四大组件
 
     /**
      * 必须调用
@@ -41,18 +49,22 @@ abstract class IManifest {
      */
     void init(Project project) {
         this.project = project
-        // 顺序别换
+        // 顺序hin重要
         realInit()
 
         // 先备份一下
         backUpManifest()
+
+        commentList = new FastXmlReader().readComments(manifestFile)
+
         isInited = true
     }
 
     private final void realInit() {
         manifestFile = new File(project.name + "/src/main/AndroidManifest.xml")
-        oldManifestFile = new File(project.name + "/src/main/${BackupManifestName}.xml")
+        oldManifestFile = new File(project.name + "/src/main/${BackupManifestName}")
         xmlRoot = new XmlParser().parse(manifestFile)
+        xmlnsMap = new FastXmlReader().readNamespace(manifestFile)
     }
 
     /**
@@ -60,26 +72,49 @@ abstract class IManifest {
      * activity、service、receiver、provider等
      * @param root < manifest>
      */
-    protected abstract void appendApplicationNodes(Node root)
+    protected abstract void appendApplicationNodes()
 
     /**
      * 权限节点拼接
      * @param root < manifest>
      */
-    protected abstract void appendPermissionNodes(Node root)
+    protected abstract void appendPermissionNodes()
+
+    Node appendNode(String name, Map attributes) {
+        return _appendNode(name, attributes, new NodeList())
+    }
+
+    Node appendNode(String name, Object value) {
+        return _appendNode(name, new HashMap(), value)
+    }
+
+    final
+    def componentsArr = ["meta-data", "activity", "service", "receiver", "provider", "uses-permission", "permission"]
+
+    private Node _appendNode(String name, Map attributes, Object value) {
+        if (curRoot == null) {
+            System.err.println("curRoot is null")
+            return null
+        }
+//        if (name == NODE_COMMENT && commentList.containsKey(value)) {
+//            println("comment exist : " + value)
+//            return null
+//        }
+        if ((name in componentsArr) && nodeList.containsKey(attributes.get("android:name"))) {
+            return null
+        }
+        return new Node(curRoot, name, attributes, value)
+    }
 
 
     final def result = {
         if (!isInited) {
             throw new UnCaughtException(" u must init() it before use")
         }
-        def xmlnsMap = new FastXmlNamespaceReader().read(oldManifestFile)
-        Node applicationRootNode = new Node(null, "appRoot")
-        Node permissionRootNode = new Node(null, "perRoot")
 
         mkp.xmlDeclaration()
         xmlnsMap?.each { key, value ->
-            mkp.declareNamespace("${key}": value)
+            mkp.declareNamespace("${key}": "${value}")
         }
         //  todo manifest中有“android:”--BUG
         manifest(xmlRoot.attributes()) {
@@ -101,25 +136,37 @@ abstract class IManifest {
                 while (nodeIt.hasNext()) {
                     mkp.yield("\n" + tabs[deepCount])
                     def nd = nodeIt.next()
+                    def name = nd.name()
 
-                    if (nd.name() == NODE_COMMENT) {
+                    if (name == NODE_COMMENT) {
                         mkp.comment(nd.text())
                         continue
-                    } else if (nd.name() == NODE_YIELD) {
+                    } else if (name == NODE_YIELD) {
                         mkp.yield(nd.text())
                         continue
                     }
 
+                    if (name in componentsArr) {
+                        nd.attributes().keySet().each {
+                            // todo "name"优化 精准一些
+                            if(it.toString().endsWith("name")) {
+                                nodeList.put(nd.attribute(it), null)
+                            }
+                        }
+                    }
+
                     // 没有子节点就以“/>”结尾
                     if (!nd.children()) {
-                        "${nd.name()}"(getAttrs(nd, deepCount + 1))
+                        "${name}"(getAttrs(nd, deepCount + 1))
                         continue
                     }
                     "${nd.name()}"(getAttrs(nd, deepCount + 1)) {
                         callback.onCall(nd, deepCount + 1)
-                        if ("application".equalsIgnoreCase(nd.name())) {
-                            appendApplicationNodes(applicationRootNode)
-                            callback.onCall(applicationRootNode, deepCount + 1)
+                        if ("application" == name) {
+                            curRoot = new Node(null, "")
+                            println("appendApplicationNodes()...")
+                            appendApplicationNodes()
+                            callback.onCall(curRoot, deepCount + 1)
                         }
                     }
                 }
@@ -136,8 +183,14 @@ abstract class IManifest {
                 }
             }
             getChildStr(xmlRoot)
-            appendPermissionNodes(permissionRootNode)
-            getChildStr(permissionRootNode)
+
+            println(nodeList.keySet().toString())
+            /*println("_b")
+            curRoot = new Node(null, "")
+            println(curRoot+"_c")
+            appendPermissionNodes()
+            println(curRoot+"_d")
+            getChildStr(permissionRootNode)*/
         }
     }
 
