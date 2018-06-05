@@ -23,20 +23,19 @@ class GetuiManifest extends IManifest {
                 "android:exported": "true",
                 "android:label"   : "NotificationCenter",
                 "android:process" : ":pushservice"
-        ])?.appendNode("intent-filter")
-                ?.appendNode("action", ["android:name": "com.igexin.sdk.action.service.message"])
-        Node pushReceiverNode = appendNode("receiver", ["android:name": "com.igexin.sdk.PushReceiver"])
-        if (pushReceiverNode!=null) {
-            pushReceiverNode.appendNode("intent-filter")
-                    .appendNode("action", ["android:name": "android.intent.action.BOOT_COMPLETED"]).parent()
-                    .appendNode("action", ["android:name": "android.net.conn.CONNECTIVITY_CHANGE"]).parent()
-                    .appendNode("action", ["android:name": "android.intent.action.USER_PRESENT"]).parent()
-                    .appendNode("action", ["android:name": "com.igexin.sdk.action.refreshls"]).parent()
-                    .appendNode(IManifest.NODE_COMMENT, "以下三项为可选的action声明，可大大提高service存活率和消息到达速度").parent()
-                    .appendNode("action", ["android:name": "android.intent.action.MEDIA_MOUNTED"]).parent()
-                    .appendNode("action", ["android:name": "android.intent.action.ACTION_POWER_CONNECTED"]).parent()
-                    .appendNode("action", ["android:name": "android.intent.action.ACTION_POWER_DISCONNECTED"]).parent()
-        }
+        ]).appendNode("intent-filter")
+                .appendNode("action", ["android:name": "com.igexin.sdk.action.service.message"])
+        appendNode("receiver", ["android:name": "com.igexin.sdk.PushReceiver"])
+                .appendNode("intent-filter")
+                .appendNode("action", ["android:name": "android.intent.action.BOOT_COMPLETED"]).parent()
+                .appendNode("action", ["android:name": "android.net.conn.CONNECTIVITY_CHANGE"]).parent()
+                .appendNode("action", ["android:name": "android.intent.action.USER_PRESENT"]).parent()
+                .appendNode("action", ["android:name": "com.igexin.sdk.action.refreshls"]).parent()
+                .appendNode(IManifest.NODE_COMMENT, "以下三项为可选的action声明，可大大提高service存活率和消息到达速度").parent()
+                .appendNode("action", ["android:name": "android.intent.action.MEDIA_MOUNTED"]).parent()
+                .appendNode("action", ["android:name": "android.intent.action.ACTION_POWER_CONNECTED"]).parent()
+                .appendNode("action", ["android:name": "android.intent.action.ACTION_POWER_DISCONNECTED"]).parent()
+
         appendNode("activity", [
                 "android:name"              : "com.igexin.sdk.PushActivity",
                 "android:excludeFromRecents": "true",
@@ -83,4 +82,5 @@ class GetuiManifest extends IManifest {
                 "android:protectionLevel": "normal"
         ])
     }
+
 }

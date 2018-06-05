@@ -17,6 +17,7 @@
 			</intent-filter>
 		</activity>
 		<activity android:name='.AActivity'/>
+	
 		<meta-data 
 			android:name='PUSH_FLAG' 
 			android:value=''/>
@@ -44,6 +45,7 @@
 				<action android:name='android.net.conn.CONNECTIVITY_CHANGE'/>
 				<action android:name='android.intent.action.USER_PRESENT'/>
 				<action android:name='com.igexin.sdk.action.refreshls'/>
+				<!--以下三项为可选的action声明，可大大提高service存活率和消息到达速度-->
 				<action android:name='android.intent.action.MEDIA_MOUNTED'/>
 				<action android:name='android.intent.action.ACTION_POWER_CONNECTED'/>
 				<action android:name='android.intent.action.ACTION_POWER_DISCONNECTED'/>
@@ -63,11 +65,26 @@
 			android:process=':pushservice' 
 			android:taskAffinity='com.igexin.sdk.PushActivityTask' 
 			android:theme='@android:style/Theme.Translucent.NoTitleBar'/>
-	
-		<!--个推SDK配置开始-->
-		<!--配置的第三方参数属性-->
-		<!--插件标识，请勿删除-->
-		<!--配置SDK核心服务-->
-		<!--个推SDK配置结束-->
 	</application>
+	<uses-permission android:name='android.permission.BIND_APPWIDGET'/>
+
+	<uses-permission android:name='android.permission.INTERNET'/>
+	<uses-permission android:name='android.permission.READ_PHONE_STATE'/>
+	<uses-permission android:name='android.permission.ACCESS_NETWORK_STATE'/>
+	<uses-permission android:name='android.permission.CHANGE_WIFI_STATE'/>
+	<uses-permission android:name='android.permission.ACCESS_WIFI_STATE'/>
+	<uses-permission android:name='android.permission.WAKE_LOCK'/>
+	<uses-permission android:name='android.permission.RECEIVE_BOOT_COMPLETED'/>
+	<uses-permission android:name='android.permission.WRITE_EXTERNAL_STORAGE'/>
+	<uses-permission android:name='android.permission.VIBRATE'/>
+	<uses-permission android:name='android.permission.GET_TASKS'/>
+	<uses-permission android:name='android.permission.BLUETOOTH'/>
+	<uses-permission android:name='android.permission.BLUETOOTH_ADMIN'/>
+	<uses-permission android:name='android.permission.ACCESS_FINE_LOCATION'/>
+	<uses-permission android:name='android.permission.ACCESS_COARSE_LOCATION'/>
+	<uses-permission android:name='android.permission.SYSTEM_ALERT_WINDOW'/>
+	<uses-permission android:name='getui.permission.GetuiService.${applicationId}'/>
+	<permission 
+		android:name='getui.permission.GetuiService.${applicationId}' 
+		android:protectionLevel='normal'/>
 </manifest>

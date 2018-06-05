@@ -8,6 +8,7 @@ import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 
 /**
+ * 2018-6-5 将集成代码集中在一个区域模块，如果用户进行了移动，下一次Build会将其还原到区域内
  * Created by xievxin on 2018/5/30
  */
 abstract class IManifest {
@@ -36,10 +37,12 @@ abstract class IManifest {
     File oldManifestFile
     Node xmlRoot
     def xmlnsMap
-    Node curRoot
 
     def commentList = [:]    // 已有的注释
-    HashMap<String, Object> nodeList = new HashMap()   // 已存在的四大组件
+    Node compRoot = new Node(null, "compRoot")
+    Node pmsRoot = new Node(null, "pmsRoot")
+    HashMap<String, Object> compMap = new HashMap()   // 已存在的四大组件
+    HashMap<String, Object> pmsMap = new HashMap()   // 权限
 
     /**
      * 必须调用
@@ -63,8 +66,34 @@ abstract class IManifest {
     private final void realInit() {
         manifestFile = new File(project.name + "/src/main/AndroidManifest.xml")
         oldManifestFile = new File(project.name + "/src/main/${BackupManifestName}")
-        xmlRoot = new XmlParser().parse(manifestFile)
+
         xmlnsMap = new FastXmlReader().readNamespace(manifestFile)
+        xmlRoot = new XmlParser().parse(manifestFile)
+
+        recoverNamespace1(xmlRoot)
+    }
+
+    void recoverNamespace1(Node root) {
+        def map = root.attributes()
+        def temMap = [:]
+        for (Iterator it = map.entrySet().iterator(); it.hasNext();) {
+            def entry = it.next()
+            String key = entry.getKey().toString()
+            xmlnsMap?.each { String xkey, String xvalue ->
+                if (key.contains(xvalue)) {
+                    temMap.put(xkey + ":" + key.substring(key.lastIndexOf("}") + 1), entry.getValue())
+                    it.remove()
+                }
+            }
+        }
+        temMap.each {
+            map.put(it.key, it.value)
+        }
+        temMap.clear()
+
+        root.each { Node node ->
+            recoverNamespace1(node)
+        }
     }
 
     /**
@@ -92,16 +121,27 @@ abstract class IManifest {
     def componentsArr = ["meta-data", "activity", "service", "receiver", "provider", "uses-permission", "permission"]
 
     private Node _appendNode(String name, Map attributes, Object value) {
-        if (curRoot == null) {
-            System.err.println("curRoot is null")
-            return null
-        }
+//        if (compRoot == null) {
+//            throw new UnCaughtException("compRoot is null")
+//        }
 //        if (name == NODE_COMMENT && commentList.containsKey(value)) {
 //            println("comment exist : " + value)
 //            return null
 //        }
-        if ((name in componentsArr) && nodeList.containsKey(attributes.get("android:name"))) {
-            return null
+//        if ((name in componentsArr) && compMap.containsKey(attributes.get("android:name"))) {
+//            return null
+//        }
+        def curRoot
+        attributes.keySet().each {
+            if (it.toString() == "android:name") {
+                if (name == "permission" || name == "uses-permission") {
+                    curRoot = pmsRoot
+                    pmsMap.put(attributes.get(it), null)
+                } else {
+                    curRoot = compRoot
+                    compMap.put(attributes.get(it), null)
+                }
+            }
         }
         return new Node(curRoot, name, attributes, value)
     }
@@ -114,7 +154,7 @@ abstract class IManifest {
 
         mkp.xmlDeclaration()
         xmlnsMap?.each { key, value ->
-            mkp.declareNamespace("${key}": "${value}")
+            mkp.declareNamespace("${key}": value)
         }
         //  todo manifest中有“android:”--BUG
         manifest(xmlRoot.attributes()) {
@@ -122,38 +162,29 @@ abstract class IManifest {
                 def attrMap = [:]
                 int size = node.attributes().size()
                 node?.attributes()?.each { key, value ->
-                    String keyStr = key.toString()
-                    xmlnsMap?.each { xkey, xvalue ->
-                        if (keyStr.contains(xvalue.toString())) {
-                            keyStr = keyStr.replaceFirst("\\{${xvalue.toString()}\\}", "${xkey}:")
-                        }
-                    }
-                    attrMap.put((size > 1 ? "\n" + tabs[tabCount] : "") + keyStr, value)
+                    attrMap.put((size > 1 ? "\n" + tabs[tabCount] : "") + key.toString(), value)
                 }
                 attrMap
             }
             def parseChild = { Iterator<Node> nodeIt, int deepCount, NodeCallback callback ->
                 while (nodeIt.hasNext()) {
-                    mkp.yield("\n" + tabs[deepCount])
                     def nd = nodeIt.next()
                     def name = nd.name()
 
                     if (name == NODE_COMMENT) {
+                        mkp.yield("\n" + tabs[deepCount])
                         mkp.comment(nd.text())
                         continue
                     } else if (name == NODE_YIELD) {
+                        mkp.yield("\n" + tabs[deepCount])
                         mkp.yield(nd.text())
+                        continue
+                    } else if (compMap.containsKey(nd.attribute("android:name"))
+                            || pmsMap.containsKey(nd.attribute("android:name"))) {
                         continue
                     }
 
-                    if (name in componentsArr) {
-                        nd.attributes().keySet().each {
-                            // todo "name"优化 精准一些
-                            if(it.toString().endsWith("name")) {
-                                nodeList.put(nd.attribute(it), null)
-                            }
-                        }
-                    }
+                    mkp.yield("\n" + tabs[deepCount])
 
                     // 没有子节点就以“/>”结尾
                     if (!nd.children()) {
@@ -163,17 +194,15 @@ abstract class IManifest {
                     "${nd.name()}"(getAttrs(nd, deepCount + 1)) {
                         callback.onCall(nd, deepCount + 1)
                         if ("application" == name) {
-                            curRoot = new Node(null, "")
-                            println("appendApplicationNodes()...")
-                            appendApplicationNodes()
-                            callback.onCall(curRoot, deepCount + 1)
+                            compMap.clear()
+                            callback.onCall(compRoot, deepCount + 1)
                         }
                     }
                 }
                 mkp.yield("\n" + tabs[deepCount - 1])
             }
             def getChildStr = { Node node ->
-                if (node.children()) {
+                if (node?.children()) {
                     parseChild(node.iterator(), 1, new NodeCallback() {
                         @Override
                         void onCall(Node nd, int curDeepCount) {
@@ -182,15 +211,12 @@ abstract class IManifest {
                     })
                 }
             }
-            getChildStr(xmlRoot)
 
-            println(nodeList.keySet().toString())
-            /*println("_b")
-            curRoot = new Node(null, "")
-            println(curRoot+"_c")
+            appendApplicationNodes()
             appendPermissionNodes()
-            println(curRoot+"_d")
-            getChildStr(permissionRootNode)*/
+            getChildStr(xmlRoot)
+            pmsMap.clear()
+            getChildStr(pmsRoot)
         }
     }
 

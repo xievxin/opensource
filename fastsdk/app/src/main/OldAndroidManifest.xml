@@ -21,4 +21,6 @@
         </activity>
         <activity android:name=".AActivity"/>
     </application>
+
+    <uses-permission android:name="android.permission.BIND_APPWIDGET"/>
 </manifest>
