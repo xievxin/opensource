@@ -6,7 +6,13 @@ import com.xx.interfaces.IManifest
  * 个验SDK集成模块
  * Created by xievxin on 2018/5/31
  */
-class GetyanManifest extends IManifest {
+class GeyanManifest extends IManifest {
+
+    @Override
+    void checkInfo() {
+
+    }
+
     @Override
     protected void appendApplicationNodes() {
 

@@ -1,17 +1,19 @@
 package com.xx.interfaces
 
-import com.xx.exception.UnCaughtException
-import com.xx.model.FastXmlReader
+import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
+import com.xx.model.RuntimeDataManager
+import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Project
-
-import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Files
 
 /**
  * 2018-6-5 将集成代码集中在一个区域模块，如果用户进行了移动，下一次Build会将其还原到区域内
+ * 2018-6-7 生成apk的时候再添加进Manifest.xml中
+ *
  * Created by xievxin on 2018/5/30
  */
 abstract class IManifest {
+
+    def static final NAME = "android:name"
 
     /**
      * 注释节点
@@ -23,77 +25,57 @@ abstract class IManifest {
      */
     static final String NODE_YIELD = "gtp_yield"
 
-    /**
-     * 备份Manifest，稳定后可拿掉
-     */
-    static final String BackupManifestName = "backupManifest.xml"
-
     static
     def tabs = ["", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t", "\t\t\t\t\t\t\t", "\t\t\t\t\t\t\t\t"]
 
-    boolean isInited = false
     Project project
-    File manifestFile
-    File oldManifestFile
-    Node xmlRoot
-    def xmlnsMap
+    def android
 
+    int curTabCount
     def curRoot
     Node compRoot = new Node(null, "compRoot")
     Node pmsRoot = new Node(null, "pmsRoot")
-    HashMap<String, Object> compMap = new HashMap()   // 已存在的四大组件
-    HashMap<String, Object> pmsMap = new HashMap()   // 权限
+
+    IManifest() {
+        project = RuntimeDataManager.mProject
+        android = project.extensions.getByType(BaseAppModuleExtension)
+    }
+
+    final void write(File file, String charset) {
+        StringBuilder sb = new StringBuilder()
+        String content = file.getText(charset)
+        int appIndex = content.lastIndexOf("</application>")
+        int maniIndex = content.lastIndexOf("</manifest>")
+        sb.append(content.substring(0, appIndex))
+                .append(addComponentItem())
+                .append(content.substring(appIndex, maniIndex))
+                .append(addPermissionItem())
+                .append(content.substring(maniIndex))
+        file.write(sb.toString(), charset)
+    }
+
+    private String addComponentItem() {
+        curRoot = compRoot
+        appendApplicationNodes()
+        curTabCount = 2
+        return new StreamingMarkupBuilder().bind(result).toString()
+                .replace("<manifest>", "")
+                .replace("</manifest>", "")
+    }
+
+    private String addPermissionItem() {
+        curRoot = pmsRoot
+        appendPermissionNodes()
+        curTabCount = 1
+        return new StreamingMarkupBuilder().bind(result).toString()
+                .replace("<manifest>", "")
+                .replace("</manifest>", "")
+    }
 
     /**
-     * 必须调用
-     * @param project
-     * @param manifestFile
-     * @param xmlRoot
+     * 检查用户是否配置了相关信息
      */
-    void init(Project project) {
-        this.project = project
-        // 顺序hin重要
-        realInit()
-        backUpManifest()
-        isInited = true
-    }
-
-    private final void realInit() {
-        manifestFile = new File(project.name + "/src/main/AndroidManifest.xml")
-        oldManifestFile = new File(project.name + "/src/main/${BackupManifestName}")
-
-        xmlnsMap = new FastXmlReader().readNamespace(manifestFile)
-        xmlRoot = new XmlParser().parse(manifestFile)
-
-        recoverNamespace1(xmlRoot)
-    }
-
-    /**
-     * 把转换了的“{http....}”域名替换掉
-     * @param root
-     */
-    void recoverNamespace1(Node root) {
-        def map = root.attributes()
-        def temMap = [:]
-        for (Iterator it = map.entrySet().iterator(); it.hasNext();) {
-            def entry = it.next()
-            String key = entry.getKey().toString()
-            xmlnsMap?.each { String xkey, String xvalue ->
-                if (key.contains(xvalue)) {
-                    temMap.put(xkey + ":" + key.substring(key.lastIndexOf("}") + 1), entry.getValue())
-                    it.remove()
-                }
-            }
-        }
-        temMap.each {
-            map.put(it.key, it.value)
-        }
-        temMap.clear()
-
-        root.each { Node node ->
-            recoverNamespace1(node)
-        }
-    }
+    abstract void checkInfo()
 
     /**
      * application节点下拼接
@@ -116,37 +98,22 @@ abstract class IManifest {
         return _appendNode(name, new HashMap(), value)
     }
 
+    /**
+     *
+     * @param name 节点名
+     * @param attributes 属性
+     * @param value <>value<\>
+     * @return
+     */
     private Node _appendNode(String name, Map attributes, Object value) {
-        attributes.keySet().each {
-            if (it.toString() == "android:name") {
-                if (isPermissionTag(name)) {
-                    pmsMap.put(attributes.get(it), null)
-                } else {
-                    compMap.put(attributes.get(it), null)
-                }
-            }
-        }
         return new Node(curRoot, name, attributes, value)
     }
 
-
+    /**
+     * xml格式规范化
+     */
     final def result = {
-        if (!isInited) {
-            throw new UnCaughtException(" u must init() it before use")
-        }
-
-        mkp.xmlDeclaration()
-//        mkp.declareNamespace("${key}": value)
-        def tempMap = [:]
-        boolean isFirst = true
-        xmlnsMap?.each { key, value ->
-            tempMap.put("${isFirst?"":"\n\t"}xmlns:${key}".toString(), value)
-            isFirst = false
-        }
-        xmlRoot.attributes().each {key, value ->
-            tempMap.put("\n\t"+key, value)
-        }
-        manifest(tempMap) {
+        manifest() {
             def getAttrs = { Node node, int tabCount ->
                 def attrMap = [:]
                 int size = node.attributes().size()
@@ -168,13 +135,7 @@ abstract class IManifest {
                         mkp.yield("\n" + tabs[deepCount])
                         mkp.yield(nd.text())
                         continue
-                    } else if (isPermissionTag(name)) {
-                        if (pmsMap.containsKey(nd.attribute("android:name")))
-                            continue
-                    } else if (compMap.containsKey(nd.attribute("android:name"))) {
-                        continue
                     }
-
                     mkp.yield("\n" + tabs[deepCount])
 
                     // 没有子节点就以“/>”结尾
@@ -184,21 +145,13 @@ abstract class IManifest {
                     }
                     "${name}"(getAttrs(nd, deepCount + 1)) {
                         callback.onCall(nd, deepCount + 1)
-                        if ("application" == name) {
-                            compMap.clear()
-                            callback.onCall(compRoot, deepCount + 1)
-                        }
-                    }
-                    if ("application" == name) {
-                        // 和permission节点间隔2行
-                        mkp.yield("\n\n")
                     }
                 }
                 mkp.yield("\n" + tabs[deepCount - 1])
             }
             def getChildStr = { Node node ->
                 if (node?.children()) {
-                    parseChild(node.iterator(), 1, new NodeCallback() {
+                    parseChild(node.iterator(), curTabCount, new NodeCallback() {
                         @Override
                         void onCall(Node nd, int curDeepCount) {
                             parseChild(nd.iterator(), curDeepCount, this)
@@ -207,33 +160,8 @@ abstract class IManifest {
                 }
             }
 
-            curRoot = compRoot
-            appendApplicationNodes()
-            curRoot = pmsRoot
-            appendPermissionNodes()
-            curRoot = null
-
-            mkp.yield("\n")
-            getChildStr(xmlRoot)
-            pmsMap.clear()
-            getChildStr(pmsRoot)
+            getChildStr(curRoot)
         }
-    }
-
-    boolean isPermissionTag(String tag) {
-        tag == "permission" || tag == "uses-permission"
-    }
-
-    /**
-     * 每次运行前给用户备份一下
-     */
-    private void backUpManifest() {
-        if (oldManifestFile.exists()) {
-            if (!oldManifestFile.delete()) {
-                return
-            }
-        }
-        Files.copy(manifestFile.toPath(), oldManifestFile.toPath())
     }
 
 }

@@ -1,14 +1,14 @@
 package com.xx.fastsdkimpl
 
-import com.xx.bean.GtUserBean
+import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
+import com.xx.bean.GetuiUserBean
 import com.xx.exception.GroovyException
 import com.xx.impl.getui.GetuiManifest
-import com.xx.impl.getyan.GetyanManifest
+import com.xx.impl.getyan.GeyanManifest
 import com.xx.interfaces.DownloadListener
 import com.xx.interfaces.IManifest
 import com.xx.model.HttpUtil
 import com.xx.model.RuntimeDataManager
-import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Project
 import org.gradle.api.internal.project.DefaultProject
 import org.gradle.api.internal.tasks.DefaultTaskContainer
@@ -30,12 +30,11 @@ class FastSdkPlugin extends BasePlugin {
             System.err.println("application required!")
             return
         }
+
+        project.extensions.create('getuiSDKUser', GetuiUserBean)
+        RuntimeDataManager.mProject = project
         initArr()
 
-        project.extensions.create('gtUser', GtUserBean)
-        RuntimeDataManager.mProject = project
-
-        readLocalProperties()
         if (downloadSDK()) {
             configLibs()
             try {
@@ -80,31 +79,6 @@ class FastSdkPlugin extends BasePlugin {
 //            }
         } catch (Exception e) {
             e.printStackTrace()
-        }
-    }
-
-    /**
-     * 后期服务端提供 applicationId查APPID的接口后可删除
-     */
-    private final void readLocalProperties() {
-        println("readLocalProperties...")
-        Properties properties = new Properties()
-        properties.load(project.rootProject.file('local.properties').newDataInputStream())
-
-        def usr = project.gtUser as GtUserBean
-        usr.APP_ID = properties.getProperty("GETUI_APP_ID")
-        usr.APP_KEY = properties.getProperty("GETUI_APP_KEY")
-        usr.APP_SECRET = properties.getProperty("GETUI_APP_SECRET")
-        usr.skipNetCheck = Boolean.parseBoolean(properties.getProperty("skipNetCheck"))
-
-        if (!usr.APP_ID) {
-            System.err.println("GETUI_APP_ID not found")
-        }
-        if (!usr.APP_KEY) {
-            System.err.println("GETUI_APP_KEY not found")
-        }
-        if (!usr.APP_SECRET) {
-            System.err.println("GETUI_APP_SECRET not found")
         }
     }
 
@@ -154,7 +128,7 @@ class FastSdkPlugin extends BasePlugin {
             }
         }
 
-        def usr = project.gtUser as GtUserBean
+        def usr = project.extensions.findByType(GetuiUserBean)
         if (usr.skipNetCheck) {
             System.err.println("Network err!!Suggest you 'Rebuild Project' when network is fine")
             return true
@@ -221,43 +195,65 @@ class FastSdkPlugin extends BasePlugin {
 
     private final void configManifest() {
         println("configManifest...")
-        def manifestFile = new File(project.name + "/src/main/AndroidManifest.xml")
+
+        def android = project.extensions.getByType(BaseAppModuleExtension)
+        println(android.class)
+
+        project.afterEvaluate {
+            android.applicationVariants.all { variant ->
+
+                // todo 多个application，只有一个想集成个推捏？
+                String pkgName = [variant.mergedFlavor.applicationId, variant.buildType.applicationIdSuffix].findAll().join()
+                println "pkgName:" + pkgName
+
+                variant.outputs.each { output ->
+
+                    output.processManifest.doLast {
+
+                        println(output.processManifest.class)
+                        println(output.processManifest.outputs.class)
+
+                        //output.getProcessManifest().manifestOutputDirectory
+                        output.processManifest.outputs.files.each { File file ->
+                            if (file.isDirectory()) {
+                                //在gradle plugin 3.0.0之后，file是目录，且不包含AndroidManifest.xml，需要自己拼接
+                                letMeShowYouWhatIsTheManifestShouldBe(new File(file, "AndroidManifest.xml"))
+                            } else if (file.name.equalsIgnoreCase("AndroidManifest.xml")) {
+                                //在gradle plugin 3.0.0之前，file是文件，且文件名为AndroidManifest.xml
+                                letMeShowYouWhatIsTheManifestShouldBe(file)
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    private final void letMeShowYouWhatIsTheManifestShouldBe(File manifestFile) {
+        println("letMeShowYouWhatIsTheManifestShouldBe()...")
         if (!manifestFile.exists()) {
             System.err.println("can't find AndroidManifest.xml....")
             return
         }
 
         // 解析
-        def xmlRoot = new XmlParser().parse(manifestFile)
-        println("parse 'manifest.xml' success...")
-
-        xmlRoot.application?."meta-data"?.each { Node node ->
-            node.attributes().each {
-                String[] arr = it.toString().split("=")
-                if (arr?.length == 2 && "PUSH_FLAG" == arr[1]) {
-                    throw new GroovyException("manifest was configured")
-                }
-            }
-        }
+//        def xmlRoot = new XmlParser().parse(manifestFile)
 
         int type = 1    // 模拟从服务器取到的已开通功能
         IManifest manifest
         if (type == 1) {
             manifest = new GetuiManifest()
         } else if (type == 2) {
-            manifest = new GetyanManifest()
+            manifest = new GeyanManifest()
+        } else {
+            System.err.println("服务器取到的type : " + type)
         }
 
-        if (manifest) {
-            manifest.init(project)
-            def doc = new StreamingMarkupBuilder().bind(manifest.result)
-            def writer = new FileWriter(manifestFile)
-//            def writer = new FileWriter(new File(project.name + "/src/main/test.xml"))
-            try {
-                writer << doc
-            } finally {
-                writer.close()
-            }
+        if (manifest != null) {
+            manifest.checkInfo()
+            manifest.write(manifestFile, "UTF-8")
+            println("IManifest.write() over...\n\t" + manifestFile.getAbsolutePath())
         }
     }
 

@@ -1,5 +1,6 @@
 package com.xx.impl.getui
 
+import com.xx.bean.GetuiUserBean
 import com.xx.interfaces.IManifest
 
 /**
@@ -9,14 +10,31 @@ import com.xx.interfaces.IManifest
 class GetuiManifest extends IManifest {
 
     @Override
+    void checkInfo() {
+        def usr = project.extensions.findByType(GetuiUserBean)
+
+        if (!usr.getui_APP_ID) {
+            System.err.println("getui_APP_ID not found")
+        }
+        if (!usr.getui_APP_KEY) {
+            System.err.println("getui_APP_KEY not found")
+        }
+        if (!usr.getui_APP_SECRET) {
+            System.err.println("getui_APP_SECRET not found")
+        }
+        println("GetuiManifest.checkInfo() end")
+    }
+
+    @Override
     protected void appendApplicationNodes() {
-        appendNode(IManifest.NODE_COMMENT, "个推SDK配置开始")
+        def usr = project.extensions.findByType(GetuiUserBean)
+        appendNode(NODE_COMMENT, "个推SDK配置开始")
         appendNode(IManifest.NODE_COMMENT, "配置的第三方参数属性")
         appendNode(IManifest.NODE_COMMENT, "插件标识，请勿删除")
         appendNode("meta-data", ["android:name": "PUSH_FLAG", "android:value": ""])
-        appendNode("meta-data", ["android:name": "PUSH_APPID", "android:value": "${project.gtUser.APP_ID}"])
-        appendNode("meta-data", ["android:name": "PUSH_APPKEY", "android:value": "${project.gtUser.APP_KEY}"])
-        appendNode("meta-data", ["android:name": "PUSH_APPSECRET", "android:value": "${project.gtUser.APP_SECRET}}"])
+        appendNode("meta-data", ["android:name": "PUSH_APPID", "android:value": "${usr.getui_APP_ID}"])
+        appendNode("meta-data", ["android:name": "PUSH_APPKEY", "android:value": "${usr.getui_APP_KEY}"])
+        appendNode("meta-data", ["android:name": "PUSH_APPSECRET", "android:value": "${usr.getui_APP_SECRET}}"])
         appendNode(IManifest.NODE_COMMENT, "配置SDK核心服务")
         appendNode("service", [
                 "android:name"    : "com.igexin.sdk.PushService",
@@ -57,6 +75,7 @@ class GetuiManifest extends IManifest {
 
     @Override
     protected void appendPermissionNodes() {
+        def applicationId = android.defaultConfig.applicationId
         appendNode("uses-permission", ["android:name": "android.permission.INTERNET"])
         appendNode("uses-permission", ["android:name": "android.permission.READ_PHONE_STATE"])
         appendNode("uses-permission", ["android:name": "android.permission.ACCESS_NETWORK_STATE"])
@@ -76,9 +95,9 @@ class GetuiManifest extends IManifest {
         appendNode(IManifest.NODE_COMMENT, "浮动通知权限")
         appendNode("uses-permission", ["android:name": "android.permission.SYSTEM_ALERT_WINDOW"])
         appendNode(IManifest.NODE_COMMENT, "自定义权限")
-        appendNode("uses-permission", ["android:name": "getui.permission.GetuiService.\${applicationId}"])
+        appendNode("uses-permission", ["android:name": "getui.permission.GetuiService.${applicationId}"])
         appendNode("permission", [
-                "android:name"           : "getui.permission.GetuiService.\${applicationId}",
+                "android:name"           : "getui.permission.GetuiService.${applicationId}",
                 "android:protectionLevel": "normal"
         ])
     }

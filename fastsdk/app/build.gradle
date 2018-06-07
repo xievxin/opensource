@@ -7,7 +7,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 27
         versionCode 1
-        versionName "1.2"
+        versionName "1.1"
     }
     buildTypes {
         release {
@@ -24,16 +24,6 @@ dependencies {
 }
 
 
-buildscript {
-    repositories {
-        maven {
-            url uri('../repo')
-        }
-    }
-    dependencies {
-        classpath 'com.xx.fastsdk:test:0.3.0'
-    }
-}
 //buildscript{
 //    repositories {
 //        jcenter()
@@ -42,4 +32,21 @@ buildscript {
 //        classpath 'com.xx.fastsdk:beta:+'
 //    }
 //}
+buildscript {
+    repositories {
+        maven {
+            url uri('../repo')
+        }
+    }
+    dependencies {
+        classpath 'com.xx.fastsdk:test:0.3.1'
+    }
+}
 apply plugin: 'com.xx.fastsdk'
+getuiSDKUser {
+    getui_APP_ID "fEcv3YmA9C6MBTQlyjnDg8"
+    getui_APP_SECRET "JyqcPWqROz6An2lb3jZ0k4"
+    getui_APP_KEY "UrHfUjA7Tl8sIg6qpnWtGA"
+    skipNetCheck true
+}
+
