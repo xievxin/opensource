@@ -24,19 +24,17 @@ dependencies {
 }
 
 
-//buildscript{
-//    repositories {
-//        jcenter()
-//    }
-//    dependencies {
-//        classpath 'com.xx.fastsdk:beta:+'
-//    }
+//buildscript {
+//    repositories { jcenter() }
+//    dependencies.classpath 'com.xx.fastsdk:beta:+'
 //}
 buildscript {
-    repositories {
+    repositories{
         maven {
             url uri('../repo')
         }
+        google()
+        jcenter()
     }
     dependencies {
         classpath 'com.xx.fastsdk:test:0.3.1'

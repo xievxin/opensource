@@ -3,6 +3,7 @@ apply plugin: 'maven'
 repositories {
     mavenCentral()
 }
+
 group='com.xx.fastsdk'
 archivesBaseName = 'test'
 version='0.3.1'

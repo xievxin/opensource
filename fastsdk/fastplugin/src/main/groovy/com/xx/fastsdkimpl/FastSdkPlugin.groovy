@@ -10,10 +10,7 @@ import com.xx.interfaces.IManifest
 import com.xx.model.HttpUtil
 import com.xx.model.RuntimeDataManager
 import org.gradle.api.Project
-import org.gradle.api.internal.project.DefaultProject
-import org.gradle.api.internal.tasks.DefaultTaskContainer
 
-import java.lang.reflect.Method
 import java.util.zip.ZipFile
 
 class FastSdkPlugin extends BasePlugin {
@@ -31,8 +28,12 @@ class FastSdkPlugin extends BasePlugin {
             return
         }
 
-        project.extensions.create('getuiSDKUser', GetuiUserBean)
         RuntimeDataManager.mProject = project
+        project.task("fastsdkCheck").doLast {
+            FastSDKChecker.notAskJustWaiting(project)
+        }
+        project.extensions.create('getuiSDKUser', GetuiUserBean)
+
         initArr()
 
         if (downloadSDK()) {
@@ -58,27 +59,6 @@ class FastSdkPlugin extends BasePlugin {
         sb.delete(0, sb.size())
         while (index-- > 0) {
             space << sb.append("-").toString()
-        }
-    }
-
-    void addTask() {
-        try {
-            def taskContainerField = DefaultProject.class.getDeclaredField("taskContainer")
-            taskContainerField.setAccessible(true)
-            def taskContainer = taskContainerField.get(project)
-
-            // public <T extends Task> T create(String name, Class<T> type) {
-            Method createMhd = DefaultTaskContainer.class.getDeclaredMethod("create", String.class, Class.class)
-            createMhd.invoke(taskContainer, "fastsdk", FastTask.class)
-            println("addTask 'fastsdk'")
-
-//            project.getTasksByName("fastsdk", false).each {Task task->
-//                if(task.getClass().simpleName.startsWith("FastTask")) {
-//                    task.doFirst {}
-//                }
-//            }
-        } catch (Exception e) {
-            e.printStackTrace()
         }
     }
 
@@ -213,13 +193,13 @@ class FastSdkPlugin extends BasePlugin {
                         println(output.processManifest.class)
                         println(output.processManifest.outputs.class)
 
-                        //output.getProcessManifest().manifestOutputDirectory
+                        // output.getProcessManifest().manifestOutputDirectory
                         output.processManifest.outputs.files.each { File file ->
                             if (file.isDirectory()) {
-                                //在gradle plugin 3.0.0之后，file是目录，且不包含AndroidManifest.xml，需要自己拼接
+                                // 在gradle plugin 3.0.0之后，file是目录，且不包含AndroidManifest.xml，需要自己拼接
                                 letMeShowYouWhatIsTheManifestShouldBe(new File(file, "AndroidManifest.xml"))
                             } else if (file.name.equalsIgnoreCase("AndroidManifest.xml")) {
-                                //在gradle plugin 3.0.0之前，file是文件，且文件名为AndroidManifest.xml
+                                // 在gradle plugin 3.0.0之前，file是文件，且文件名为AndroidManifest.xml
                                 letMeShowYouWhatIsTheManifestShouldBe(file)
                             }
                         }
