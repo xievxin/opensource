@@ -171,6 +171,10 @@ class FastSdkPlugin extends BasePlugin {
             }
         }
         buffer = null
+
+        project.dependencies {
+            implementation project.fileTree(dir: 'libs', include: ['*.jar'])
+        }
     }
 
     private final void configManifest() {
