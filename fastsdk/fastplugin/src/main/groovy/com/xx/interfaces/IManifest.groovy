@@ -1,6 +1,6 @@
 package com.xx.interfaces
 
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
+import com.android.build.gradle.AppExtension
 import com.xx.model.RuntimeDataManager
 import groovy.xml.StreamingMarkupBuilder
 import org.gradle.api.Project
@@ -38,7 +38,7 @@ abstract class IManifest {
 
     IManifest() {
         project = RuntimeDataManager.mProject
-        android = project.extensions.getByType(BaseAppModuleExtension)
+        android = project.extensions.getByType(AppExtension)
     }
 
     final void write(File file, String charset) {

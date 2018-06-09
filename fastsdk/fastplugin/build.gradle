@@ -6,7 +6,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation gradleApi()
     implementation localGroovy()
-    implementation 'com.android.tools.build:gradle:3.2.0-alpha14'
+    implementation 'com.android.tools.build:gradle:3.0.1'
 }
 apply from: 'localrepo.gradle'
 //apply from: 'upload.gradle'

@@ -1,6 +1,5 @@
 package com.xx.model
 
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import org.gradle.api.Project
 
 /**
@@ -13,7 +12,6 @@ class RuntimeDataManager {
 
     public static Project mProject = null
     private static RuntimeDataManager mInstance
-    private def android
 
     static synchronized RuntimeDataManager getInstance() {
         if (mInstance == null) {

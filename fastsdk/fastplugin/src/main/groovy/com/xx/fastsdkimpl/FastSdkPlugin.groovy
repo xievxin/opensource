@@ -1,6 +1,6 @@
 package com.xx.fastsdkimpl
 
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
+import com.android.build.gradle.AppExtension
 import com.xx.bean.GetuiUserBean
 import com.xx.exception.GroovyException
 import com.xx.impl.getui.GetuiManifest
@@ -135,7 +135,7 @@ class FastSdkPlugin extends BasePlugin {
 
         byte[] buffer = new byte[1024]
         String name
-        pluginLibFile.entries().each { entry ->
+        pluginLibFile.entries()?.each { entry ->
             name = entry.getName()
             if (name.startsWith("__")) {
                 return
@@ -147,7 +147,7 @@ class FastSdkPlugin extends BasePlugin {
                     fos = new FileOutputStream(jarFile)
                 }
             } else if (name.endsWith(".so")) {
-                def soFile = new File(jniDir.getAbsolutePath() + name.substring(name.indexOf(File.separator)))
+                def soFile = new File(jniDir.getAbsolutePath() + name.substring(name.indexOf("/")))
                 // 先创建上级目录
                 def parentFile = soFile.getParentFile()
                 if (!parentFile.exists()) {
@@ -173,14 +173,18 @@ class FastSdkPlugin extends BasePlugin {
         buffer = null
 
         project.dependencies {
-            implementation project.fileTree(dir: 'libs', include: ['*.jar'])
+            try {
+                implementation project.fileTree(dir: 'libs', include: ['*.jar'])
+            }catch (Exception e) {
+                compile project.fileTree(dir: 'libs', include: ['*.jar'])
+            }
         }
     }
 
     private final void configManifest() {
         println("configManifest...")
 
-        def android = project.extensions.getByType(BaseAppModuleExtension)
+        def android = project.extensions.getByType(AppExtension)
         println(android.class)
 
         project.afterEvaluate {
