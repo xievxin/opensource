@@ -1,4 +1,4 @@
-package com.xx.model
+package com.xx.util
 
 import com.xx.interfaces.DownloadListener
 

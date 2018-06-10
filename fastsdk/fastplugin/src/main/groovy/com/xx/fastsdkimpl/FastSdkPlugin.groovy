@@ -7,8 +7,10 @@ import com.xx.impl.getui.GetuiManifest
 import com.xx.impl.getyan.GeyanManifest
 import com.xx.interfaces.DownloadListener
 import com.xx.interfaces.IManifest
-import com.xx.model.HttpUtil
+
 import com.xx.model.RuntimeDataManager
+import com.xx.util.CheckUtil
+import com.xx.util.HttpUtil
 import org.gradle.api.Project
 
 import java.util.zip.ZipFile
@@ -70,6 +72,7 @@ class FastSdkPlugin extends BasePlugin {
      */
     private final boolean downloadSDK() {
         final def url = "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip"
+//        final def url = "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip"
         File libFile = createLibFile()
         int retryCount = 5
         while (retryCount-- > 0) {
@@ -141,7 +144,7 @@ class FastSdkPlugin extends BasePlugin {
                 return
             }
             FileOutputStream fos
-            if (name.endsWith(".jar")) {
+            if (name.endsWith(".jar") || name.endsWith(".aar")) {
                 def jarFile = new File(libDir.getAbsolutePath() + File.separator + name)
                 if (!jarFile.exists()) {
                     fos = new FileOutputStream(jarFile)
@@ -172,11 +175,12 @@ class FastSdkPlugin extends BasePlugin {
         }
         buffer = null
 
+        boolean flag = CheckUtil.isGradleUper3_0_0(project)
         project.dependencies {
-            try {
-                implementation project.fileTree(dir: 'libs', include: ['*.jar'])
-            }catch (Exception e) {
-                compile project.fileTree(dir: 'libs', include: ['*.jar'])
+            if(flag) {
+                implementation project.fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+            }else {
+                compile project.fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
             }
         }
     }
