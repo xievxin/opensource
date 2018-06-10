@@ -8,4 +8,5 @@
 /build
 /captures
 /gradlelibrary
+/repo
 .externalNativeBuild
