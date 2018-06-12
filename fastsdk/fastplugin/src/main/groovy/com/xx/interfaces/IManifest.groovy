@@ -1,5 +1,6 @@
 package com.xx.interfaces
 
+import com.xx.util.CheckUtil
 import com.android.build.gradle.AppExtension
 import com.xx.model.RuntimeDataManager
 import groovy.xml.StreamingMarkupBuilder
@@ -42,14 +43,22 @@ abstract class IManifest {
     }
 
     final void write(File file, String charset) {
+        String compStr = addComponentItem()
+        String perStr = addPermissionItem()
+
+        // aar不需要写入manifest
+        if(CheckUtil.isEmpty(compStr?.trim()) && CheckUtil.isEmpty(perStr?.trim())) {
+            return
+        }
+
         StringBuilder sb = new StringBuilder()
         String content = file.getText(charset)
         int appIndex = content.lastIndexOf("</application>")
         int maniIndex = content.lastIndexOf("</manifest>")
         sb.append(content.substring(0, appIndex))
-                .append(addComponentItem())
+                .append(compStr)
                 .append(content.substring(appIndex, maniIndex))
-                .append(addPermissionItem())
+                .append(perStr)
                 .append(content.substring(maniIndex))
         file.write(sb.toString(), charset)
     }

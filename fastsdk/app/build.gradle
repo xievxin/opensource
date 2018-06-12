@@ -7,7 +7,7 @@ android {
         minSdkVersion 15
         targetSdkVersion 27
         versionCode 1
-        versionName "1.11"
+        versionName "1.1"
     }
     buildTypes {
         release {
@@ -41,9 +41,13 @@ buildscript {
     }
 }
 apply plugin: 'com.xx.fastsdk'
-getuiSDKUser {
+xxSDKUser {
+    skipNetCheck true
+
     getui_APP_ID "fEcv3YmA9C6MBTQlyjnDg8"
     getui_APP_SECRET "JyqcPWqROz6An2lb3jZ0k4"
     getui_APP_KEY "UrHfUjA7Tl8sIg6qpnWtGA"
-    skipNetCheck true
+
+    gs_APP_ID "KfDxRGKvDQ65MQ305rbL07"
+    gs_INSTALL_CHANNEL "testChannel"
 }

@@ -8,7 +8,6 @@ import org.gradle.api.Project
 class RuntimeDataManager {
 
     public String pluginDir
-    public String zipSDKPath
 
     public static Project mProject = null
     private static RuntimeDataManager mInstance
@@ -22,7 +21,6 @@ class RuntimeDataManager {
 
     private RuntimeDataManager() {
         pluginDir = mProject.getBuildDir().getAbsolutePath() + File.separator + "gtPlugins"
-        zipSDKPath = pluginDir + File.separator + "libSDK.zip"
     }
 
 }

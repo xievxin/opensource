@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import com.getui.gs.sdk.GsManager;
 import com.igexin.sdk.PushManager;
 
 import java.util.List;
@@ -23,5 +24,7 @@ public class MainActivity extends AppCompatActivity {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         List list=getPackageManager().getInstalledPackages(PackageManager.GET_ACTIVITIES);
         Log.i(TAG, "onCreate: ");
+
+        GsManager.getInstance().init(this);
     }
 }

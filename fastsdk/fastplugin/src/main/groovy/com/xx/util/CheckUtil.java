@@ -23,4 +23,12 @@ public class CheckUtil {
         int verStart = Integer.parseInt(project.getGradle().getGradleVersion().substring(0, 1));
         return verStart>=4;
     }
+
+    public static boolean isEmpty(CharSequence s) {
+        if (s == null) {
+            return true;
+        } else {
+            return s.length() == 0;
+        }
+    }
 }

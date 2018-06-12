@@ -1,13 +1,14 @@
 package com.xx.fastsdkimpl
 
+import com.alibaba.fastjson.JSONObject
 import com.android.build.gradle.AppExtension
-import com.xx.bean.GetuiUserBean
+import com.xx.bean.UserBean
 import com.xx.exception.GroovyException
+import com.xx.impl.geshu.GeshuManifest
 import com.xx.impl.getui.GetuiManifest
 import com.xx.impl.getyan.GeyanManifest
 import com.xx.interfaces.DownloadListener
 import com.xx.interfaces.IManifest
-
 import com.xx.model.RuntimeDataManager
 import com.xx.util.CheckUtil
 import com.xx.util.HttpUtil
@@ -17,9 +18,18 @@ import java.util.zip.ZipFile
 
 class FastSdkPlugin extends BasePlugin {
 
+    static final int TYPE_NONE = 0
+    static final int TYPE_ERROR = 1 << 0
+    static final int TYPE_GETUI = 1 << 1
+    static final int TYPE_GESHU = 1 << 2
+    static final int TYPE_GEXIANG = 1 << 3
+    static final int TYPE_GEYAN = 1 << 4
+
     Project project
     def process = [""]
     def space = [""]
+    int openedType = TYPE_NONE
+    JSONObject respJo
 
     @Override
     void apply(Project project) {
@@ -34,20 +44,28 @@ class FastSdkPlugin extends BasePlugin {
         project.task("fastsdkCheck").doLast {
             FastSDKChecker.notAskJustWaiting(project)
         }
-        project.extensions.create('getuiSDKUser', GetuiUserBean)
+        project.extensions.create('xxSDKUser', UserBean)
 
-        initArr()
 
-        if (downloadSDK()) {
-            configLibs()
-            try {
-                configManifest()
-            } catch (GroovyException e) {
-                System.out.println("err : " + e.toString())
+        project.afterEvaluate {
+            initArr()
+            requestType()
+
+            def usr = project.extensions.findByType(UserBean)
+            if (usr.skipNetCheck) {
+//                System.err.println("Strongly suggest you 'Rebuild Project' when network is fine")
             }
-        }
+            if ((openedType>TYPE_ERROR && downloadSDK()) || usr.skipNetCheck) {
+                configLibs()
+                try {
+                    configManifest()
+                } catch (GroovyException e) {
+                    System.out.println("err : " + e.toString())
+                }
+            }
 
-        println("*******************fastsdk OVER*******************")
+            println("*******************fastsdk OVER*******************")
+        }
     }
 
     void initArr() {
@@ -64,25 +82,57 @@ class FastSdkPlugin extends BasePlugin {
         }
     }
 
+    void requestType() {
+        openedType = TYPE_GETUI   // 模拟从服务器取到的已开通功能
+
+        respJo = new JSONObject()
+
+        // 模拟数据
+        JSONObject getuiJo = new JSONObject()
+        getuiJo.put("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip")
+        respJo.put("getui", getuiJo)
+
+        JSONObject geshuJo = new JSONObject()
+        geshuJo.put("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip")
+        respJo.put("geshu", geshuJo)
+    }
+
     /**
      * 下载最新sdk包
-     * todo 应该先调个检查更新的接口
      * @param project
      * @return true download success or already exist, false otherwise
      */
-    private final boolean downloadSDK() {
-        final def url = "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip"
-//        final def url = "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip"
-        File libFile = createLibFile()
-        int retryCount = 5
+    private boolean downloadSDK() {
+        String libFilePath = createLibFile().path
+
+        if(respJo==null) {
+            return false
+        }
+
+        if(respJo.containsKey("getui")) {
+            File outFile = new File(libFilePath + File.separator + "getui.zip")
+            JSONObject jsonObject = respJo.getJSONObject("getui")
+            realDownload(jsonObject.getString("url"), outFile)
+        }
+        if(respJo.containsKey("geshu")) {
+            File outFile = new File(libFilePath + File.separator + "geshu.zip")
+            JSONObject jsonObject = respJo.getJSONObject("geshu")
+            realDownload(jsonObject.getString("url"), outFile)
+        }
+
+        return true
+    }
+
+    private void realDownload(String url, File outFile) {
+        int retryCount = 3
         while (retryCount-- > 0) {
-            boolean flag = new HttpUtil().download(url, libFile, new DownloadListener() {
+            boolean flag = new HttpUtil().download(url, outFile, new DownloadListener() {
 
                 Writer writer = System.out.newPrintWriter()
 
                 @Override
                 void onStart() {
-                    println("start downloadSDK")
+                    println("start downloadSDK ${outFile.getName()}")
                 }
 
                 @Override
@@ -94,7 +144,7 @@ class FastSdkPlugin extends BasePlugin {
                             + space[20 - index] + ">\t" + percent + "%")
                     writer.flush()
                     if (percent == 100) {
-                        println("\n下载成功 End downloadSDK, libFile is " + (libFile?.exists() ? "loaded" : "no exist"))
+                        println("\n${outFile.getName()}下载成功")
                     }
                 }
 
@@ -105,81 +155,83 @@ class FastSdkPlugin extends BasePlugin {
             })
 
             if (flag) {
-                return true
+                break
             } else {
                 println("还剩余${retryCount}次下载重试次数")
             }
         }
 
-        def usr = project.extensions.findByType(GetuiUserBean)
-        if (usr.skipNetCheck) {
-            System.err.println("Network err!!Suggest you 'Rebuild Project' when network is fine")
-            return true
+        def usr = project.extensions.findByType(UserBean)
+        if (!usr.skipNetCheck) {
+            throw new GroovyException("SDK download failed")
         }
-
-        throw new GroovyException("SDK download failed")
     }
 
     private final void configLibs() {
         println("configLibs...")
-        ZipFile pluginLibFile = new ZipFile(createLibFile())
 
         File libDir = new File(project.name + "/libs")
         if (!libDir.exists()) {
             libDir.mkdirs()
         }
-//        println(libDir.getAbsolutePath())
 
         File jniDir = new File(project.name + "/src/main/jniLibs")
         if (!jniDir.exists()) {
             jniDir.mkdirs()
         }
-//        println(jniDir.getAbsolutePath())
 
-        byte[] buffer = new byte[1024]
-        String name
-        pluginLibFile.entries()?.each { entry ->
-            name = entry.getName()
-            if (name.startsWith("__")) {
-                return
-            }
-            FileOutputStream fos
-            if (name.endsWith(".jar") || name.endsWith(".aar")) {
-                def jarFile = new File(libDir.getAbsolutePath() + File.separator + name)
-                if (!jarFile.exists()) {
-                    fos = new FileOutputStream(jarFile)
-                }
-            } else if (name.endsWith(".so")) {
-                def soFile = new File(jniDir.getAbsolutePath() + name.substring(name.indexOf("/")))
-                // 先创建上级目录
-                def parentFile = soFile.getParentFile()
-                if (!parentFile.exists()) {
-                    parentFile.mkdirs()
-                }
-                if (!soFile.exists()) {
-                    fos = new FileOutputStream(soFile)
-                }
-            }
-            if (fos != null) {
-                println("copying " + name)
+        File pluginFile = createLibFile()
+        File[] files = pluginFile.listFiles()
+        files?.each {
+            if(!it.isDirectory() && it.getName().endsWith(".zip")) {
+                ZipFile pluginLibFile = new ZipFile(it)
 
-                InputStream is = pluginLibFile.getInputStream(entry)
+                byte[] buffer = new byte[1024]
+                String name
+                pluginLibFile.entries()?.each { entry ->
+                    name = entry.getName()
+                    if (name.startsWith("__")) {
+                        return
+                    }
+                    FileOutputStream fos
+                    if (name.endsWith(".jar") || name.endsWith(".aar")) {
+                        def jarFile = new File(libDir.getAbsolutePath() + File.separator + name)
+                        if (!jarFile.exists()) {
+                            fos = new FileOutputStream(jarFile)
+                        }
+                    } else if (name.endsWith(".so")) {
+                        def soFile = new File(jniDir.getAbsolutePath() + name.substring(name.indexOf("/")))
+                        // 先创建上级目录
+                        def parentFile = soFile.getParentFile()
+                        if (!parentFile.exists()) {
+                            parentFile.mkdirs()
+                        }
+                        if (!soFile.exists()) {
+                            fos = new FileOutputStream(soFile)
+                        }
+                    }
+                    if (fos != null) {
+                        println("copying " + name)
 
-                int length
-                while ((length = is.read(buffer)) != -1) {
-                    fos.write(buffer, 0, length)
+                        InputStream is = pluginLibFile.getInputStream(entry)
+
+                        int length
+                        while ((length = is.read(buffer)) != -1) {
+                            fos.write(buffer, 0, length)
+                        }
+                        is.close()
+                        fos.close()
+                    }
                 }
-                is.close()
-                fos.close()
+                buffer = null
             }
         }
-        buffer = null
 
         boolean flag = CheckUtil.isGradleUper3_0_0(project)
         project.dependencies {
-            if(flag) {
+            if (flag) {
                 implementation project.fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
-            }else {
+            } else {
                 compile project.fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
             }
         }
@@ -189,23 +241,14 @@ class FastSdkPlugin extends BasePlugin {
         println("configManifest...")
 
         def android = project.extensions.getByType(AppExtension)
-        println(android.class)
 
-        project.afterEvaluate {
+//        project.afterEvaluate {
             android.applicationVariants.all { variant ->
 
-                // todo 多个application，只有一个想集成个推捏？
-                String pkgName = [variant.mergedFlavor.applicationId, variant.buildType.applicationIdSuffix].findAll().join()
-                println "pkgName:" + pkgName
+//                String pkgName = [variant.mergedFlavor.applicationId, variant.buildType.applicationIdSuffix].findAll().join()
 
                 variant.outputs.each { output ->
-
                     output.processManifest.doLast {
-
-                        println(output.processManifest.class)
-                        println(output.processManifest.outputs.class)
-
-                        // output.getProcessManifest().manifestOutputDirectory
                         output.processManifest.outputs.files.each { File file ->
                             if (file.isDirectory()) {
                                 // 在gradle plugin 3.0.0之后，file是目录，且不包含AndroidManifest.xml，需要自己拼接
@@ -219,7 +262,7 @@ class FastSdkPlugin extends BasePlugin {
 
                 }
             }
-        }
+//        }
     }
 
     private final void letMeShowYouWhatIsTheManifestShouldBe(File manifestFile) {
@@ -229,22 +272,24 @@ class FastSdkPlugin extends BasePlugin {
             return
         }
 
-        // 解析
-//        def xmlRoot = new XmlParser().parse(manifestFile)
-
-        int type = 1    // 模拟从服务器取到的已开通功能
-        IManifest manifest
-        if (type == 1) {
-            manifest = new GetuiManifest()
-        } else if (type == 2) {
-            manifest = new GeyanManifest()
-        } else {
-            System.err.println("服务器取到的type : " + type)
+        List<IManifest> list = []
+        if (openedType & TYPE_GETUI) {
+            list << new GetuiManifest()
+        }
+        if (openedType & TYPE_GESHU) {
+            list << new GeshuManifest()
+        }
+        if (openedType & TYPE_GEYAN) {
+            list << new GeyanManifest()
         }
 
-        if (manifest != null) {
-            manifest.checkInfo()
-            manifest.write(manifestFile, "UTF-8")
+        if (list == null || list.size() == 0) {
+            System.err.println("服务器取到的type not found : " + openedType)
+        } else {
+            list.each { IManifest manifest ->
+                manifest.checkInfo()
+                manifest.write(manifestFile, "UTF-8")
+            }
             println("IManifest.write() over...\n\t" + manifestFile.getAbsolutePath())
         }
     }
@@ -254,16 +299,7 @@ class FastSdkPlugin extends BasePlugin {
         if (!pluginFile.exists()) {
             pluginFile.mkdirs()
         }
-        File sdkFile = new File(RuntimeDataManager.getInstance().zipSDKPath)
-//        if (sdkFile.exists()) {
-//            sdkFile.delete();
-//        }
-//        try {
-//            sdkFile.createNewFile();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-        sdkFile
+        return pluginFile
     }
 }
 

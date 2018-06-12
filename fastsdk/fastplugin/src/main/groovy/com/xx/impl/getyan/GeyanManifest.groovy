@@ -10,7 +10,7 @@ class GeyanManifest extends IManifest {
 
     @Override
     void checkInfo() {
-
+        println("个验Manifest.checkInfo() end")
     }
 
     @Override

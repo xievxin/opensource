@@ -23,15 +23,17 @@ class HttpUtil {
                     // already exist
                     listener.onBuffer(100)
                     return true
+                } else if (contentLen < curLen) {
+                    throw new IllegalArgumentException("file changed and larger than locals")
                 }
                 int totalLen
                 int lastPercent
 
                 conn = httpUrl.openConnection()
                 conn.addRequestProperty("Range", "bytes=" + curLen + "-" + contentLen)
-                if (contentLen != conn.getContentLength()) {
-                    throw new IllegalArgumentException("server has changed SDK file, pls try again")
-                }
+//                if (contentLen != conn.getContentLength()) {
+//                    throw new IllegalArgumentException("server has changed SDK file, pls try again")
+//                }
 
                 is = conn.getInputStream()
                 fos = new RandomAccessFile(outFile, "rw")

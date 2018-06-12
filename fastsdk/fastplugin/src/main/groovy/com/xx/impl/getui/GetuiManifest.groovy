@@ -1,6 +1,6 @@
 package com.xx.impl.getui
 
-import com.xx.bean.GetuiUserBean
+import com.xx.bean.UserBean
 import com.xx.interfaces.IManifest
 
 /**
@@ -11,7 +11,7 @@ class GetuiManifest extends IManifest {
 
     @Override
     void checkInfo() {
-        def usr = project.extensions.findByType(GetuiUserBean)
+        def usr = project.extensions.findByType(UserBean)
 
         if (!usr.getui_APP_ID) {
             System.err.println("getui_APP_ID not found")
@@ -22,12 +22,12 @@ class GetuiManifest extends IManifest {
         if (!usr.getui_APP_SECRET) {
             System.err.println("getui_APP_SECRET not found")
         }
-        println("GetuiManifest.checkInfo() end")
+        println("个推Manifest.checkInfo() end")
     }
 
     @Override
     protected void appendApplicationNodes() {
-        def usr = project.extensions.findByType(GetuiUserBean)
+        def usr = project.extensions.findByType(UserBean)
         appendNode(NODE_COMMENT, "个推SDK配置开始")
         appendNode(IManifest.NODE_COMMENT, "配置的第三方参数属性")
         appendNode(IManifest.NODE_COMMENT, "插件标识，请勿删除")

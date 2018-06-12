@@ -22,7 +22,7 @@ class SDKCheckerPlugin implements Plugin<Project> {
             taskContainerField.setAccessible(true)
             def taskContainer = taskContainerField.get(project)
 
-            // public <T extends Task> T create(String name, Class<T> type) {
+            // public <T extends Task> T create(String name, Class<T> openedType) {
             Method createMhd = DefaultTaskContainer.class.getDeclaredMethod("create", String.class, Class.class)
             createMhd.invoke(taskContainer, "fastsdk", FastSDKChecker.class)
             println("addTask 'fastsdk'")
