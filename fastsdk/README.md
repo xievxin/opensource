@@ -31,14 +31,12 @@ buildscript {
 apply plugin: 'com.xx.fastsdk'
 // 服务端提供根据包名查APPID的接口后，下面的可以忽略
 xxSDKUser {
-    skipNetCheck true
-    
     getui_APP_ID "your_appid"
-    getui_APP_SECRET "your_appsecret"
     getui_APP_KEY "your_appkey"
-
+    getui_APP_SECRET "your_appsecret"
 }
 ```
+    
     
     
 OVER!!  
