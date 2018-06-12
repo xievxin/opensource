@@ -1,7 +1,7 @@
 package com.xx.fastsdkimpl
 
-import com.alibaba.fastjson.JSONObject
 import com.android.build.gradle.AppExtension
+import com.google.gson.JsonObject
 import com.xx.bean.UserBean
 import com.xx.exception.GroovyException
 import com.xx.impl.geshu.GeshuManifest
@@ -29,7 +29,7 @@ class FastSdkPlugin extends BasePlugin {
     def process = [""]
     def space = [""]
     int openedType = TYPE_NONE
-    JSONObject respJo
+    JsonObject respJo
 
     @Override
     void apply(Project project) {
@@ -85,16 +85,16 @@ class FastSdkPlugin extends BasePlugin {
     void requestType() {
         openedType = TYPE_GETUI   // 模拟从服务器取到的已开通功能
 
-        respJo = new JSONObject()
+        respJo = new JsonObject()
 
         // 模拟数据
-        JSONObject getuiJo = new JSONObject()
-        getuiJo.put("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip")
-        respJo.put("getui", getuiJo)
+        JsonObject getuiJo = new JsonObject()
+        getuiJo.addProperty("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip")
+        respJo.add("getui", getuiJo)
 
-        JSONObject geshuJo = new JSONObject()
-        geshuJo.put("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip")
-        respJo.put("geshu", geshuJo)
+        JsonObject geshuJo = new JsonObject()
+        geshuJo.addProperty("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip")
+        respJo.add("geshu", geshuJo)
     }
 
     /**
@@ -109,15 +109,15 @@ class FastSdkPlugin extends BasePlugin {
             return false
         }
 
-        if(respJo.containsKey("getui")) {
+        if(respJo.has("getui")) {
             File outFile = new File(libFilePath + File.separator + "getui.zip")
-            JSONObject jsonObject = respJo.getJSONObject("getui")
-            realDownload(jsonObject.getString("url"), outFile)
+            JsonObject jsonObject = respJo.getAsJsonObject("getui")
+            realDownload(jsonObject.("url").getAsString(), outFile)
         }
-        if(respJo.containsKey("geshu")) {
+        if(respJo.hasProperty("geshu")) {
             File outFile = new File(libFilePath + File.separator + "geshu.zip")
-            JSONObject jsonObject = respJo.getJSONObject("geshu")
-            realDownload(jsonObject.getString("url"), outFile)
+            JsonObject jsonObject = respJo.getAsJsonObject("geshu")
+            realDownload(jsonObject.("url").getAsString(), outFile)
         }
 
         return true

@@ -7,7 +7,8 @@ FastSDK
 >2. 控制更新（普通集成方式甚至无法更新，而且用户手动升级需要删除老版本遗留的无用代码或配置）  
 >3. 定制化（用户无须更改任何代码即可实现定制化变更）  
 >4. 一键式集成（一套API自动集成`每日互动`旗下已开通的所有业务，个数、个像等等） 
->5. 售后（内置自动检测插件，只需在原有基础上添加一行代码即可集成）
+>5. 售后（内置自动检测插件，只需在原有基础上添加一行代码即可集成）  
+>6. 省去用户的一些“奇葩”compile设置（自动依赖jar、aar）
 
   
      
@@ -19,29 +20,25 @@ FastSDK
 * 点击`应用配置`，获取到相应的`AppID`、`AppKey`、`AppSecret`信息：
 
 ![](readme/image/sdk06.png)
-#### 2.配置个推应用参数（可省略）
-	服务端提供根据包名查APPID的接口后，此步可以忽略
-将上一步获取到的相关信息配置如下：  
 
-![](readme/image/sdk01.png)  
+#### 2.配置依赖
+将下段代码放入`app/build.gradle`中，并替换对应的"your_*"相关信息 
 ```Java
-GETUI_APP_ID=
-GETUI_APP_SECRET=
-GETUI_APP_KEY=
-```
-#### 3.配置依赖
-![](readme/image/sdk02.png)  
-```Java
-buildscript{
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.xx.fastsdk:beta:+'
-    }
+buildscript {
+    repositories { jcenter() }
+    dependencies.classpath 'com.xx.fastsdk:beta:+'
 }
 apply plugin: 'com.xx.fastsdk'
-```  
+// 服务端提供根据包名查APPID的接口后，下面的可以忽略
+xxSDKUser {
+    skipNetCheck true
+    
+    getui_APP_ID "your_appid"
+    getui_APP_SECRET "your_appsecret"
+    getui_APP_KEY "your_appkey"
+
+}
+```
     
     
 OVER!!  

@@ -1,5 +1,5 @@
 apply plugin: 'groovy'
-//apply plugin: 'java'
+apply plugin: 'java'
 
 
 dependencies {
@@ -7,7 +7,6 @@ dependencies {
     implementation gradleApi()
     implementation localGroovy()
     implementation 'com.android.tools.build:gradle:3.0.1'
-    implementation 'com.alibaba:fastjson:1.1.68.android'
 }
-apply from: 'localrepo.gradle'
-//apply from: 'upload.gradle'
+//apply from: 'localrepo.gradle'
+apply from: 'upload.gradle'
