@@ -1,13 +1,7 @@
 package com.xx.fasksdk;
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -17,9 +11,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        PushManager.getInstance().initialize(this, null);
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        List list=getPackageManager().getInstalledPackages(PackageManager.GET_ACTIVITIES);
-        Log.i(TAG, "onCreate: ");
+
+//        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+//        Notification notification = new Notification.Builder(MainActivity.this)
+//                .setSmallIcon(R.drawable.ic_launcher_background)
+//                .setContentText("texxxxxxt")
+//                .setContentTitle("title")
+//                .setTicker("ticker")
+//                .build();
+//        notification.flags |= Notification.FLAG_AUTO_CANCEL;
+//        notification.defaults |= Notification.DEFAULT_ALL;
+//        manager.notify(777, notification);
+
     }
 }

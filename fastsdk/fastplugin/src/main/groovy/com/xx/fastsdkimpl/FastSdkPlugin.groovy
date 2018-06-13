@@ -46,26 +46,27 @@ class FastSdkPlugin extends BasePlugin {
         }
         project.extensions.create('xxSDKUser', UserBean)
 
+        println(project.gradle.gradleVersion)
 
-        project.afterEvaluate {
-            initArr()
-            requestType()
+//        project.afterEvaluate {
+        initArr()
+        requestType()
 
-            def usr = project.extensions.findByType(UserBean)
-            if (usr.skipNetCheck) {
+        def usr = project.extensions.findByType(UserBean)
+        if (usr.skipNetCheck) {
 //                System.err.println("Strongly suggest you 'Rebuild Project' when network is fine")
-            }
-            if ((openedType>TYPE_ERROR && downloadSDK()) || usr.skipNetCheck) {
-                configLibs()
-                try {
-                    configManifest()
-                } catch (GroovyException e) {
-                    System.out.println("err : " + e.toString())
-                }
-            }
-
-            println("*******************fastsdk OVER*******************")
         }
+        if ((openedType > TYPE_ERROR && downloadSDK()) || usr.skipNetCheck) {
+            configLibs()
+            try {
+                configManifest()
+            } catch (GroovyException e) {
+                System.out.println("err : " + e.toString())
+            }
+        }
+
+        println("*******************fastsdk OVER*******************")
+//        }
     }
 
     void initArr() {
@@ -83,7 +84,7 @@ class FastSdkPlugin extends BasePlugin {
     }
 
     void requestType() {
-        openedType = TYPE_GETUI   // 模拟从服务器取到的已开通功能
+        openedType = TYPE_GETUI | TYPE_GESHU   // 模拟从服务器取到的已开通功能
 
         respJo = new JsonObject()
 
@@ -105,16 +106,16 @@ class FastSdkPlugin extends BasePlugin {
     private boolean downloadSDK() {
         String libFilePath = createLibFile().path
 
-        if(respJo==null) {
+        if (respJo == null) {
             return false
         }
 
-        if(respJo.has("getui")) {
+        if (respJo.has("getui")) {
             File outFile = new File(libFilePath + File.separator + "getui.zip")
             JsonObject jsonObject = respJo.getAsJsonObject("getui")
             realDownload(jsonObject.("url").getAsString(), outFile)
         }
-        if(respJo.hasProperty("geshu")) {
+        if (respJo.has("geshu")) {
             File outFile = new File(libFilePath + File.separator + "geshu.zip")
             JsonObject jsonObject = respJo.getAsJsonObject("geshu")
             realDownload(jsonObject.("url").getAsString(), outFile)
@@ -155,7 +156,7 @@ class FastSdkPlugin extends BasePlugin {
             })
 
             if (flag) {
-                break
+                return
             } else {
                 println("还剩余${retryCount}次下载重试次数")
             }
@@ -180,10 +181,11 @@ class FastSdkPlugin extends BasePlugin {
             jniDir.mkdirs()
         }
 
+        List<String> aarList = []
         File pluginFile = createLibFile()
         File[] files = pluginFile.listFiles()
         files?.each {
-            if(!it.isDirectory() && it.getName().endsWith(".zip")) {
+            if (!it.isDirectory() && it.getName().endsWith(".zip")) {
                 ZipFile pluginLibFile = new ZipFile(it)
 
                 byte[] buffer = new byte[1024]
@@ -195,9 +197,13 @@ class FastSdkPlugin extends BasePlugin {
                     }
                     FileOutputStream fos
                     if (name.endsWith(".jar") || name.endsWith(".aar")) {
+                        name = name.substring(Math.max(name.indexOf("/") + 1, 0))
                         def jarFile = new File(libDir.getAbsolutePath() + File.separator + name)
                         if (!jarFile.exists()) {
                             fos = new FileOutputStream(jarFile)
+                        }
+                        if (name.endsWith(".aar")) {
+                            aarList << name.replace(".aar", "")
                         }
                     } else if (name.endsWith(".so")) {
                         def soFile = new File(jniDir.getAbsolutePath() + name.substring(name.indexOf("/")))
@@ -232,7 +238,13 @@ class FastSdkPlugin extends BasePlugin {
             if (flag) {
                 implementation project.fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
             } else {
-                compile project.fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+                compile project.fileTree(dir: 'libs', include: ['*.jar'])
+                project.repositories.flatDir {
+                    dir project.file('libs')
+                }
+                aarList?.each {
+                    compile(name: it, ext: 'aar')
+                }
             }
         }
     }
@@ -242,7 +254,7 @@ class FastSdkPlugin extends BasePlugin {
 
         def android = project.extensions.getByType(AppExtension)
 
-//        project.afterEvaluate {
+        project.afterEvaluate {
             android.applicationVariants.all { variant ->
 
 //                String pkgName = [variant.mergedFlavor.applicationId, variant.buildType.applicationIdSuffix].findAll().join()
@@ -262,7 +274,7 @@ class FastSdkPlugin extends BasePlugin {
 
                 }
             }
-//        }
+        }
     }
 
     private final void letMeShowYouWhatIsTheManifestShouldBe(File manifestFile) {
