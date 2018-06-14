@@ -24,26 +24,24 @@ dependencies {
 }
 
 
-buildscript {
-    repositories { jcenter() }
-    dependencies.classpath 'com.xx.fastsdk:beta:0.5.2'
-}
 //buildscript {
-//    repositories{
-//        maven {
-//            url uri('../repo')
-//        }
-//        google()
-//        jcenter()
-//    }
-//    dependencies {
-//        classpath 'com.xx.fastsdk:test:0.3.3'
-//    }
+//    repositories { jcenter() }
+//    dependencies.classpath 'com.xx.fastsdk:beta:0.5.2'
 //}
+buildscript {
+    repositories{
+        maven {
+            url uri('../repo')
+        }
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.xx.fastsdk:test:0.3.3'
+    }
+}
 apply plugin: 'com.xx.fastsdk'
 xxSDKUser {
-    skipNetCheck true
-
     getui_APP_ID "fEcv3YmA9C6MBTQlyjnDg8"
     getui_APP_SECRET "JyqcPWqROz6An2lb3jZ0k4"
     getui_APP_KEY "UrHfUjA7Tl8sIg6qpnWtGA"

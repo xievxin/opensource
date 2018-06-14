@@ -26,9 +26,9 @@ class FastSdkPlugin extends BasePlugin {
     static final int TYPE_GEYAN = 1 << 4
 
     Project project
+    int openedType = TYPE_NONE
     def process = [""]
     def space = [""]
-    int openedType = TYPE_NONE
     JsonObject respJo
 
     @Override
@@ -46,17 +46,10 @@ class FastSdkPlugin extends BasePlugin {
         }
         project.extensions.create('xxSDKUser', UserBean)
 
-        println(project.gradle.gradleVersion)
-
-//        project.afterEvaluate {
         initArr()
         requestType()
 
-        def usr = project.extensions.findByType(UserBean)
-        if (usr.skipNetCheck) {
-//                System.err.println("Strongly suggest you 'Rebuild Project' when network is fine")
-        }
-        if ((openedType > TYPE_ERROR && downloadSDK()) || usr.skipNetCheck) {
+        if ((openedType > TYPE_ERROR && downloadSDK()) || shouldSkipNetCheck()) {
             configLibs()
             try {
                 configManifest()
@@ -66,7 +59,16 @@ class FastSdkPlugin extends BasePlugin {
         }
 
         println("*******************fastsdk OVER*******************")
-//        }
+    }
+
+    String skipNetCheck
+    boolean shouldSkipNetCheck() {
+        if(CheckUtil.isEmpty(skipNetCheck)) {
+            Properties properties = new Properties()
+            properties.load(project.rootProject.file('local.properties').newDataInputStream())
+            skipNetCheck = properties.getProperty("skipNetCheck")
+        }
+        return Boolean.parseBoolean(skipNetCheck)
     }
 
     void initArr() {
@@ -162,8 +164,7 @@ class FastSdkPlugin extends BasePlugin {
             }
         }
 
-        def usr = project.extensions.findByType(UserBean)
-        if (!usr.skipNetCheck) {
+        if (!shouldSkipNetCheck()) {
             throw new GroovyException("SDK download failed")
         }
     }
@@ -302,7 +303,7 @@ class FastSdkPlugin extends BasePlugin {
                 manifest.checkInfo()
                 manifest.write(manifestFile, "UTF-8")
             }
-            println("IManifest.write() over...\n\t" + manifestFile.getAbsolutePath())
+            println("IManifest.write() over...\n\t" /*+ manifestFile.getAbsolutePath()*/)
         }
     }
 

@@ -8,5 +8,5 @@ dependencies {
     implementation localGroovy()
     implementation 'com.android.tools.build:gradle:3.0.1'
 }
-apply from: 'localrepo.gradle'
-//apply from: 'upload.gradle'
+//apply from: 'localrepo.gradle'
+apply from: 'upload.gradle'
