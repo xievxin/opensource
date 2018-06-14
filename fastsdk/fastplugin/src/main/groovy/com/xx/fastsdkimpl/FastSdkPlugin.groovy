@@ -86,7 +86,7 @@ class FastSdkPlugin extends BasePlugin {
     }
 
     void requestType() {
-        openedType = TYPE_GETUI | TYPE_GESHU   // 模拟从服务器取到的已开通功能
+        openedType = TYPE_GETUI /*| TYPE_GESHU*/   // 模拟从服务器取到的已开通功能
 
         respJo = new JsonObject()
 
@@ -95,9 +95,9 @@ class FastSdkPlugin extends BasePlugin {
         getuiJo.addProperty("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/gtSDK.zip")
         respJo.add("getui", getuiJo)
 
-        JsonObject geshuJo = new JsonObject()
-        geshuJo.addProperty("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip")
-        respJo.add("geshu", geshuJo)
+//        JsonObject geshuJo = new JsonObject()
+//        geshuJo.addProperty("url", "https://raw.githubusercontent.com/xievxin/GitWorkspace/master/geshuSDK.zip")
+//        respJo.add("geshu", geshuJo)
     }
 
     /**
